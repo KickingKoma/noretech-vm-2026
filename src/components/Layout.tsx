@@ -37,7 +37,7 @@ export function Layout() {
       {/* Hero-banner */}
       <div className="relative w-full h-56 overflow-hidden mb-[-3rem]">
         <img
-          src="/mascots.jpg"
+          src={`${import.meta.env.BASE_URL}mascots.jpg`}
           alt="Clutch, Maple & Zayu – VM 2026-maskottar"
           className="w-full h-full object-cover"
           style={{ objectPosition: 'center 15%' }}
