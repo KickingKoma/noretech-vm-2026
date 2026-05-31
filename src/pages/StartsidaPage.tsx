@@ -5,6 +5,7 @@ import { useAuth } from '../hooks/useAuth'
 import { useDeadlines } from '../hooks/useDeadlines'
 import { GROUP_ROUNDS, KNOCKOUT_ROUNDS } from '../types'
 import type { Match, UserTip } from '../types'
+import { Flag } from '../components/Flag'
 
 function formatDeadline(d: Date): string {
   return d.toLocaleString('sv-SE', {
@@ -38,6 +39,34 @@ export function StartsidaPage() {
 
   const groupMatches = allMatches.filter(m => GROUP_ROUNDS.includes(m.round))
   const knockoutMatches = allMatches.filter(m => KNOCKOUT_ROUNDS.includes(m.round))
+
+  const now = new Date()
+  const toDateStr = (d: Date) =>
+    `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`
+  const todayStr = toDateStr(now)
+
+  const todayMatches = allMatches
+    .filter(m => toDateStr(new Date(m.starts_at)) === todayStr)
+    .sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime())
+
+  const nextMatches = todayMatches.length === 0
+    ? (() => {
+        const future = allMatches
+          .filter(m => new Date(m.starts_at) > now)
+          .sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime())
+        if (future.length === 0) return []
+        const nextDateStr = toDateStr(new Date(future[0].starts_at))
+        return future.filter(m => toDateStr(new Date(m.starts_at)) === nextDateStr)
+      })()
+    : []
+
+  const displayMatches = todayMatches.length > 0 ? todayMatches : nextMatches
+  const isToday = todayMatches.length > 0
+  const displayHeading = isToday
+    ? 'Dagens matcher'
+    : displayMatches.length > 0
+      ? `Nästa matchdag · ${new Date(displayMatches[0].starts_at).toLocaleDateString('sv-SE', { day: 'numeric', month: 'short' })}`
+      : ''
   const groupTipped = groupMatches.filter(m => tips.has(m.id)).length
   const knockoutTipped = knockoutMatches.filter(m => tips.has(m.id)).length
 
@@ -102,6 +131,46 @@ export function StartsidaPage() {
               )}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Dagens / nästkommande matcher */}
+      {displayMatches.length > 0 && (
+        <div className="space-y-2">
+          <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wide">{displayHeading}</h2>
+          <div className="bg-gray-900 rounded-xl border border-gray-800 divide-y divide-gray-800">
+            {displayMatches.map(m => {
+              const tip = tips.get(m.id)
+              const hasResult = m.home_score !== null && m.away_score !== null
+              const time = new Date(m.starts_at).toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' })
+              return (
+                <div key={m.id} className="px-4 py-3 flex items-center gap-3 text-sm">
+                  <span className="text-gray-500 w-10 shrink-0 text-xs">{time}</span>
+                  <div className="flex-1 flex items-center justify-between gap-2 min-w-0">
+                    <span className="flex items-center gap-1.5 truncate text-gray-200">
+                      <Flag name={m.home_team} />
+                      {m.home_team}
+                    </span>
+                    <span className="font-bold text-white shrink-0 tabular-nums">
+                      {hasResult ? `${m.home_score} – ${m.away_score}` : '–'}
+                    </span>
+                    <span className="flex items-center gap-1.5 truncate text-gray-200 justify-end">
+                      {m.away_team}
+                      <Flag name={m.away_team} />
+                    </span>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    {tip ? (
+                      <span className="text-xs text-cyan-400">{tip.home_tip}–{tip.away_tip}</span>
+                    ) : (
+                      <span className="text-xs text-gray-600">ej tippat</span>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+          <p className="text-xs text-gray-600 text-right">tider i lokal tid</p>
         </div>
       )}
 
