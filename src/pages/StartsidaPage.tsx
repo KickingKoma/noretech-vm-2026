@@ -188,6 +188,20 @@ export function StartsidaPage() {
         </Link>
       </div>
 
+      {/* Konto */}
+      <div className="bg-gray-900 rounded-xl border border-gray-800 p-5">
+        <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-3">Ditt konto</h2>
+        <p className="text-sm text-gray-400 mb-3">
+          Du kan byta visningsnamn och lösenord under kontoinställningar.
+        </p>
+        <Link
+          to="/account"
+          className="inline-block text-sm text-cyan-400 hover:text-cyan-300 transition-colors"
+        >
+          Gå till kontoinställningar →
+        </Link>
+      </div>
+
       {/* Regler */}
       <div className="bg-gray-900 rounded-xl border border-gray-800 p-5 space-y-4">
         <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wide">Regler</h2>
