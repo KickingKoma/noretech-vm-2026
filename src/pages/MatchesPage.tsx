@@ -70,6 +70,14 @@ export function MatchesPage() {
     }
   }
 
+  const deleteTip = async (matchId: string) => {
+    setSaving(matchId)
+    await supabase.from('tips').delete().eq('user_id', user!.id).eq('match_id', matchId)
+    setTips(prev => { const m = new Map(prev); m.delete(matchId); return m })
+    setDrafts(prev => { const m = new Map(prev); m.delete(matchId); return m })
+    setSaving(null)
+  }
+
   const saveTip = async (matchId: string) => {
     if (groupLocked) return
     const draft = getDraft(matchId)
@@ -202,6 +210,16 @@ export function MatchesPage() {
                       >
                         {isSaving ? '...' : savedTip && !isDirty ? 'Sparat' : 'Spara'}
                       </button>
+                      {savedTip && (
+                        <button
+                          onClick={() => deleteTip(match.id)}
+                          disabled={isSaving}
+                          title="Återställ tips"
+                          className="text-gray-600 hover:text-red-400 text-xs px-1 transition-colors disabled:opacity-50"
+                        >
+                          ✕
+                        </button>
+                      )}
                     </div>
                   ) : savedTip ? (
                     <div className="text-center">
