@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import type { Match } from '../types'
-import { GROUP_ROUNDS, KNOCKOUT_ROUNDS } from '../types'
+import { GROUP_ROUNDS } from '../types'
 
 export function useDeadlines(matches: Match[]) {
   return useMemo(() => {

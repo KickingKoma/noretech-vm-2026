@@ -17,7 +17,7 @@ export function MatchesPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState<string | null>(null)
 
-  const { groupDeadline, groupLocked } = useDeadlines(allMatches)
+  const { groupLocked } = useDeadlines(allMatches)
 
   const groupMatches = allMatches.filter(m => GROUP_ROUNDS.includes(m.round))
 
@@ -26,7 +26,7 @@ export function MatchesPage() {
     async function load() {
       const [{ data: matchData }, { data: tipData }] = await Promise.all([
         supabase.from('matches').select('*').order('starts_at'),
-        supabase.from('tips').select('*').eq('user_id', user.id),
+        supabase.from('tips').select('*').eq('user_id', user!.id),
       ])
 
       if (matchData) {
@@ -94,8 +94,6 @@ export function MatchesPage() {
 
   const rounds = [...new Set(groupMatches.map(m => m.round))]
     .sort((a, b) => GROUP_ROUNDS.indexOf(a) - GROUP_ROUNDS.indexOf(b))
-
-  const tippedCount = groupMatches.filter(m => tips.has(m.id)).length
 
   if (loading) return <div className="text-gray-400 text-center py-12">Laddar...</div>
   if (groupMatches.length === 0) return <div className="text-gray-400 text-center py-12">Inga gruppspelsmatcher inlagda än.</div>

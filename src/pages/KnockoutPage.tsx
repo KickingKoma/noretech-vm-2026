@@ -43,7 +43,7 @@ export function KnockoutPage() {
     async function load() {
       const [{ data: matchData }, { data: tipData }] = await Promise.all([
         supabase.from('matches').select('*').order('starts_at'),
-        supabase.from('tips').select('*').eq('user_id', user.id),
+        supabase.from('tips').select('*').eq('user_id', user!.id),
       ])
       if (matchData) setAllMatches(matchData)
       if (tipData) {
@@ -56,7 +56,7 @@ export function KnockoutPage() {
     load()
   }, [user])
 
-  const getDraft = (match: Match, homeTeam: string, awayTeam: string): DraftTip => {
+  const getDraft = (match: Match, _homeTeam: string, _awayTeam: string): DraftTip => {
     if (drafts.has(match.id)) return drafts.get(match.id)!
     const saved = tips.get(match.id)
     return {
