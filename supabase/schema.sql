@@ -85,8 +85,7 @@ create table if not exists tips (
 
 alter table tips enable row level security;
 
--- Egna tips syns alltid; andras tips syns först efter att deadline passerat
--- (dvs. när första matchen i respektive fas har startat)
+-- Egna tips syns alltid; andras tips syns efter deadline ELLER när matchen har resultat
 create policy "Tips: las egna alltid, andras efter deadline"
   on tips for select using (
     auth.uid() = user_id
@@ -94,11 +93,15 @@ create policy "Tips: las egna alltid, andras efter deadline"
       SELECT 1 FROM matches m
       WHERE m.id = tips.match_id
       AND (
-        (m.round LIKE 'group-%'
-         AND EXISTS (SELECT 1 FROM matches WHERE round LIKE 'group-%' AND starts_at <= now()))
-        OR
-        (m.round NOT LIKE 'group-%'
-         AND EXISTS (SELECT 1 FROM matches WHERE round = 'r32' AND starts_at <= now()))
+        m.home_score IS NOT NULL
+        OR (
+          m.round LIKE 'group-%'
+          AND EXISTS (SELECT 1 FROM matches WHERE round LIKE 'group-%' AND starts_at <= now())
+        )
+        OR (
+          m.round NOT LIKE 'group-%'
+          AND EXISTS (SELECT 1 FROM matches WHERE round = 'r32' AND starts_at <= now())
+        )
       )
     )
   );

@@ -52,8 +52,11 @@ create policy "Tips: update med deadline"
   );
 
 
--- ── Tips: SELECT – egna alltid, andras först efter deadline ───
--- Förhindrar att man läser ut andras tips och retroaktivt ändrar sina egna
+-- ── Tips: SELECT – egna alltid, andras efter deadline ELLER när matchen har resultat ───
+-- Förhindrar att man läser ut andras tips och retroaktivt ändrar sina egna.
+-- Matchresultat är alltid publika, så tips för avgjorda matcher kan alltid visas.
+drop policy if exists "Tips: las egna alltid, andras efter deadline" on tips;
+
 create policy "Tips: las egna alltid, andras efter deadline"
   on tips for select using (
     auth.uid() = user_id
@@ -61,11 +64,15 @@ create policy "Tips: las egna alltid, andras efter deadline"
       SELECT 1 FROM matches m
       WHERE m.id = tips.match_id
       AND (
-        (m.round LIKE 'group-%'
-         AND EXISTS (SELECT 1 FROM matches WHERE round LIKE 'group-%' AND starts_at <= now()))
-        OR
-        (m.round NOT LIKE 'group-%'
-         AND EXISTS (SELECT 1 FROM matches WHERE round = 'r32' AND starts_at <= now()))
+        m.home_score IS NOT NULL
+        OR (
+          m.round LIKE 'group-%'
+          AND EXISTS (SELECT 1 FROM matches WHERE round LIKE 'group-%' AND starts_at <= now())
+        )
+        OR (
+          m.round NOT LIKE 'group-%'
+          AND EXISTS (SELECT 1 FROM matches WHERE round = 'r32' AND starts_at <= now())
+        )
       )
     )
   );

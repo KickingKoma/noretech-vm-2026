@@ -135,7 +135,7 @@ export function KnockoutPage() {
           : 'bg-gray-900 border-cyan-800 text-cyan-300'
       }`}>
         {knockoutLocked ? (
-          <p className="font-medium">Slutspelstipsningen är stängd — R32 har börjat.</p>
+          <p className="font-medium">Slutspelstipsningen är stängd — 16-delsfinalen har börjat.</p>
         ) : (
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div>

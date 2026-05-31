@@ -148,7 +148,7 @@ export function AdminPage() {
           {knockout && (
             <div className="space-y-3">
               <p className="text-xs text-gray-500">
-                För R32: ange lagnamn direkt. För senare rundor: välj source-match (vinnaren/förloraren av den matchen spelar här).
+                För 16-delsfinal: ange lagnamn direkt. För senare rundor: välj source-match (vinnaren/förloraren av den matchen spelar här).
               </p>
               {(['home', 'away'] as const).map(side => (
                 <div key={side} className="grid grid-cols-3 gap-2 items-end">

@@ -127,7 +127,7 @@ export function StartsidaPage() {
           <h3 className="font-semibold text-white mb-1">Så funkar det</h3>
           <ul className="text-sm text-gray-400 space-y-1.5">
             <li>• Tippa alla 72 gruppspelsmatcher innan turneringen startar</li>
-            <li>• Tippa hela slutspelsträdet innan R32 börjar</li>
+            <li>• Tippa hela slutspelsträdet innan 16-delsfinalen börjar</li>
             <li>• I slutspelet anger du även vinnare (obligatoriskt vid oavgjort)</li>
             <li>• Tips kan ändras hur många gånger som helst innan deadline</li>
             <li>• Efter deadline går det inte att ändra — inte ens för admin</li>

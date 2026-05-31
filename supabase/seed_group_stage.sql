@@ -1,5 +1,5 @@
 -- VM 2026 – Gruppspelsmatcher (alla 72 matcher)
--- Tider i UTC. Källa: Fox Sports / FIFA
+-- Tider i UTC. Källa: football-data.org (API-verifierad)
 -- Kör i Supabase Dashboard → SQL Editor
 
 INSERT INTO matches (home_team, away_team, starts_at, round) VALUES
@@ -9,8 +9,8 @@ INSERT INTO matches (home_team, away_team, starts_at, round) VALUES
 ('South Korea', 'Tjeckien',     '2026-06-12 02:00:00+00', 'group-A'),
 ('Tjeckien',    'South Africa', '2026-06-18 16:00:00+00', 'group-A'),
 ('Mexico',      'South Korea',  '2026-06-19 01:00:00+00', 'group-A'),
-('Mexico',      'Tjeckien',     '2026-06-25 01:00:00+00', 'group-A'),
-('South Korea', 'South Africa', '2026-06-25 01:00:00+00', 'group-A'),
+('Tjeckien',    'Mexico',       '2026-06-25 01:00:00+00', 'group-A'),
+('South Africa','South Korea',  '2026-06-25 01:00:00+00', 'group-A'),
 
 -- ========== GRUPP B ==========
 ('Canada',  'Bosnien-Hercegovina', '2026-06-12 19:00:00+00', 'group-B'),
@@ -23,17 +23,17 @@ INSERT INTO matches (home_team, away_team, starts_at, round) VALUES
 -- ========== GRUPP C ==========
 ('Brasilien', 'Marocko',   '2026-06-13 22:00:00+00', 'group-C'),
 ('Haiti',     'Skottland', '2026-06-14 01:00:00+00', 'group-C'),
-('Skottland', 'Marocko',   '2026-06-19 19:00:00+00', 'group-C'),
-('Brasilien', 'Haiti',     '2026-06-20 01:00:00+00', 'group-C'),
-('Brasilien', 'Skottland', '2026-06-24 22:00:00+00', 'group-C'),
+('Skottland', 'Marocko',   '2026-06-19 22:00:00+00', 'group-C'),
+('Brasilien', 'Haiti',     '2026-06-20 00:30:00+00', 'group-C'),
+('Skottland', 'Brasilien', '2026-06-24 22:00:00+00', 'group-C'),
 ('Marocko',   'Haiti',     '2026-06-24 22:00:00+00', 'group-C'),
 
 -- ========== GRUPP D ==========
-('USA',       'Paraguay', '2026-06-13 01:00:00+00', 'group-D'),
-('Australien','Turkiet',  '2026-06-13 04:00:00+00', 'group-D'),
+('USA',       'Paraguay',  '2026-06-13 01:00:00+00', 'group-D'),
+('Australien','Turkiet',   '2026-06-14 04:00:00+00', 'group-D'),
 ('USA',       'Australien','2026-06-19 19:00:00+00', 'group-D'),
-('Turkiet',   'Paraguay', '2026-06-19 04:00:00+00', 'group-D'),
-('USA',       'Turkiet',  '2026-06-26 02:00:00+00', 'group-D'),
+('Turkiet',   'Paraguay',  '2026-06-20 03:00:00+00', 'group-D'),
+('Turkiet',   'USA',       '2026-06-26 02:00:00+00', 'group-D'),
 ('Paraguay',  'Australien','2026-06-26 02:00:00+00', 'group-D'),
 
 -- ========== GRUPP E ==========
@@ -46,9 +46,9 @@ INSERT INTO matches (home_team, away_team, starts_at, round) VALUES
 
 -- ========== GRUPP F ==========
 ('Nederländerna', 'Japan',          '2026-06-14 20:00:00+00', 'group-F'),
-('Tunisien',      'Sverige',        '2026-06-15 02:00:00+00', 'group-F'),
+('Sverige',       'Tunisien',       '2026-06-15 02:00:00+00', 'group-F'),
 ('Nederländerna', 'Sverige',        '2026-06-20 17:00:00+00', 'group-F'),
-('Tunisien',      'Japan',          '2026-06-20 04:00:00+00', 'group-F'),
+('Tunisien',      'Japan',          '2026-06-21 04:00:00+00', 'group-F'),
 ('Tunisien',      'Nederländerna',  '2026-06-25 23:00:00+00', 'group-F'),
 ('Japan',         'Sverige',        '2026-06-25 23:00:00+00', 'group-F'),
 
@@ -61,11 +61,11 @@ INSERT INTO matches (home_team, away_team, starts_at, round) VALUES
 ('Egypten',    'Iran',        '2026-06-27 03:00:00+00', 'group-G'),
 
 -- ========== GRUPP H ==========
-('Spanien',     'Kap Verde',  '2026-06-15 16:00:00+00', 'group-H'),
-('Saudiarabien','Uruguay',    '2026-06-15 22:00:00+00', 'group-H'),
+('Spanien',     'Kap Verde',   '2026-06-15 16:00:00+00', 'group-H'),
+('Saudiarabien','Uruguay',     '2026-06-15 22:00:00+00', 'group-H'),
 ('Spanien',     'Saudiarabien','2026-06-21 16:00:00+00', 'group-H'),
-('Uruguay',     'Kap Verde',  '2026-06-21 22:00:00+00', 'group-H'),
-('Uruguay',     'Spanien',    '2026-06-27 00:00:00+00', 'group-H'),
+('Uruguay',     'Kap Verde',   '2026-06-21 22:00:00+00', 'group-H'),
+('Uruguay',     'Spanien',     '2026-06-27 00:00:00+00', 'group-H'),
 ('Kap Verde',   'Saudiarabien','2026-06-27 00:00:00+00', 'group-H'),
 
 -- ========== GRUPP I ==========
@@ -78,10 +78,10 @@ INSERT INTO matches (home_team, away_team, starts_at, round) VALUES
 
 -- ========== GRUPP J ==========
 ('Argentina', 'Algeriet', '2026-06-17 01:00:00+00', 'group-J'),
-('Österrike', 'Jordanien','2026-06-16 04:00:00+00', 'group-J'),
+('Österrike', 'Jordanien','2026-06-17 04:00:00+00', 'group-J'),
 ('Argentina', 'Österrike','2026-06-22 17:00:00+00', 'group-J'),
 ('Jordanien', 'Algeriet', '2026-06-23 03:00:00+00', 'group-J'),
-('Argentina', 'Jordanien','2026-06-28 02:00:00+00', 'group-J'),
+('Jordanien', 'Argentina','2026-06-28 02:00:00+00', 'group-J'),
 ('Algeriet',  'Österrike','2026-06-28 02:00:00+00', 'group-J'),
 
 -- ========== GRUPP K ==========

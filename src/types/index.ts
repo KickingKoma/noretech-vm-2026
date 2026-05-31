@@ -41,7 +41,7 @@ export const ROUND_LABEL: Record<string, string> = {
   'group-A': 'Grupp A', 'group-B': 'Grupp B', 'group-C': 'Grupp C', 'group-D': 'Grupp D',
   'group-E': 'Grupp E', 'group-F': 'Grupp F', 'group-G': 'Grupp G', 'group-H': 'Grupp H',
   'group-I': 'Grupp I', 'group-J': 'Grupp J', 'group-K': 'Grupp K', 'group-L': 'Grupp L',
-  'r32': 'Omgång 32', 'r16': 'Omgång 16', 'qf': 'Kvartsfinaler',
+  'r32': '16-delsfinal', 'r16': 'Omgång 16', 'qf': 'Kvartsfinaler',
   'sf': 'Semifinaler', '3rd': 'Bronsmatch', 'final': 'Finalen',
 }
 
