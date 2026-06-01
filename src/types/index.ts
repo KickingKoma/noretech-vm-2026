@@ -30,6 +30,15 @@ export interface Profile {
   created_at: string
 }
 
+export interface TournamentPrediction {
+  id: string
+  user_id: string
+  first_place: string
+  second_place: string
+  third_place: string
+  created_at: string
+}
+
 export const KNOCKOUT_ROUNDS = ['r32', 'r16', 'qf', 'sf', '3rd', 'final']
 
 export const GROUP_ROUNDS = [

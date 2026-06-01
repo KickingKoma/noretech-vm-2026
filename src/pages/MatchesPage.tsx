@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { useDeadlines } from '../hooks/useDeadlines'
 import { calcPoints, GROUP_ROUNDS, ROUND_LABEL } from '../types'
-import type { Match, UserTip } from '../types'
+import type { Match, UserTip, TournamentPrediction } from '../types'
 import { Flag } from '../components/Flag'
 
 interface DraftTip { home: string; away: string }
@@ -92,6 +92,152 @@ function StandingsTable({ standings, title }: { standings: Standing[]; title: st
   )
 }
 
+interface Topp3ViewProps {
+  allTeams: string[]
+  prediction: TournamentPrediction | null
+  groupLocked: boolean
+  allMatches: Match[]
+  onSave: (first: string, second: string, third: string) => Promise<void>
+  saving: boolean
+}
+
+function Topp3View({ allTeams, prediction, groupLocked, allMatches, onSave, saving }: Topp3ViewProps) {
+  const [draft, setDraft] = useState({
+    first: prediction?.first_place ?? '',
+    second: prediction?.second_place ?? '',
+    third: prediction?.third_place ?? '',
+  })
+
+  const finalMatch = allMatches.find(m => m.round === 'final')
+  const bronzeMatch = allMatches.find(m => m.round === '3rd')
+
+  const actual: Record<'first' | 'second' | 'third', string | null> = {
+    first: finalMatch?.winner_team ?? null,
+    second: finalMatch?.winner_team
+      ? (finalMatch.winner_team === finalMatch.home_team ? finalMatch.away_team : finalMatch.home_team) ?? null
+      : null,
+    third: bronzeMatch?.winner_team ?? null,
+  }
+
+  const saved: Record<'first' | 'second' | 'third', string> = {
+    first: prediction?.first_place ?? '',
+    second: prediction?.second_place ?? '',
+    third: prediction?.third_place ?? '',
+  }
+
+  const resultsKnown = !!(actual.first && actual.second && actual.third)
+
+  const totalPts = resultsKnown && prediction
+    ? (['first', 'second', 'third'] as const).reduce((sum, pos) => {
+        const maxPts = pos === 'first' ? 50 : pos === 'second' ? 30 : 20
+        return sum + (saved[pos] && saved[pos] === actual[pos] ? maxPts : 0)
+      }, 0)
+    : null
+
+  const isDirty = !groupLocked && (
+    draft.first !== saved.first || draft.second !== saved.second || draft.third !== saved.third
+  )
+  const canSave = !!(
+    draft.first && draft.second && draft.third &&
+    draft.first !== draft.second && draft.first !== draft.third && draft.second !== draft.third
+  )
+
+  const positions: { pos: 'first' | 'second' | 'third'; label: string; maxPts: number }[] = [
+    { pos: 'first', label: 'Vinnare', maxPts: 50 },
+    { pos: 'second', label: 'Tvåa', maxPts: 30 },
+    { pos: 'third', label: 'Trea', maxPts: 20 },
+  ]
+
+  return (
+    <div className="space-y-4">
+      <div className="bg-gray-900 rounded-xl p-4 border border-gray-800">
+        {resultsKnown && totalPts !== null && (
+          <div className="flex justify-end mb-3">
+            <span className={`text-xs font-bold px-2 py-0.5 rounded ${
+              totalPts > 0 ? 'bg-cyan-800 text-cyan-200' : 'bg-red-900 text-red-300'
+            }`}>{totalPts}p</span>
+          </div>
+        )}
+
+        <div className="space-y-4">
+          {positions.map(({ pos, label, maxPts }) => {
+            const isCorrect = !!(actual[pos] && saved[pos] && saved[pos] === actual[pos])
+            const isWrong = !!(actual[pos] && saved[pos] && saved[pos] !== actual[pos])
+            return (
+              <div key={pos}>
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-sm text-gray-400">
+                    {label} <span className="text-gray-600 text-xs">({maxPts}p)</span>
+                  </span>
+                  {actual[pos] && (
+                    <span className="text-xs text-gray-500">
+                      Verklig: <span className="text-white">{actual[pos]}</span>
+                    </span>
+                  )}
+                </div>
+                {!groupLocked ? (
+                  <select
+                    value={draft[pos]}
+                    onChange={e => setDraft(prev => ({ ...prev, [pos]: e.target.value }))}
+                    className="w-full bg-gray-800 text-white rounded px-3 py-2 border border-gray-700 focus:border-cyan-500 focus:outline-none text-sm"
+                  >
+                    <option value="">— Välj lag —</option>
+                    {allTeams.map(team => (
+                      <option
+                        key={team}
+                        value={team}
+                        disabled={
+                          (pos !== 'first' && draft.first === team) ||
+                          (pos !== 'second' && draft.second === team) ||
+                          (pos !== 'third' && draft.third === team)
+                        }
+                      >
+                        {team}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <div className={`px-3 py-2 rounded border text-sm font-medium flex items-center gap-1.5 ${
+                    isCorrect ? 'border-green-700 bg-green-900/20 text-green-400' :
+                    isWrong ? 'border-red-800 bg-red-900/20 text-red-400' :
+                    'border-gray-700 bg-gray-800 text-gray-300'
+                  }`}>
+                    {saved[pos]
+                      ? <><Flag name={saved[pos]} />{saved[pos]}</>
+                      : <span className="text-gray-600 italic">Ej tippat</span>
+                    }
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+
+        {!groupLocked && (
+          <div className="mt-5 flex justify-end">
+            <button
+              onClick={() => onSave(draft.first, draft.second, draft.third)}
+              disabled={saving || !isDirty || !canSave}
+              className={`px-4 py-1.5 rounded text-sm font-medium transition-colors ${
+                isDirty && canSave
+                  ? 'bg-cyan-600 hover:bg-cyan-500 text-white'
+                  : prediction ? 'bg-gray-700 text-gray-400 cursor-default'
+                  : 'bg-cyan-600 hover:bg-cyan-500 text-white'
+              } disabled:opacity-50`}
+            >
+              {saving ? '...' : prediction && !isDirty ? 'Sparat' : 'Spara'}
+            </button>
+          </div>
+        )}
+      </div>
+
+      <p className="text-gray-600 text-xs text-center">
+        Vinnare rätt = 50p &nbsp;·&nbsp; Tvåa rätt = 30p &nbsp;·&nbsp; Trea rätt = 20p
+      </p>
+    </div>
+  )
+}
+
 export function MatchesPage() {
   const { user } = useAuth()
   const [allMatches, setAllMatches] = useState<Match[]>([])
@@ -100,6 +246,8 @@ export function MatchesPage() {
   const [activeRound, setActiveRound] = useState('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState<string | null>(null)
+  const [prediction, setPrediction] = useState<TournamentPrediction | null>(null)
+  const [predSaving, setPredSaving] = useState(false)
 
   const { groupLocked } = useDeadlines(allMatches)
 
@@ -108,9 +256,10 @@ export function MatchesPage() {
   useEffect(() => {
     if (!user) return
     async function load() {
-      const [{ data: matchData }, { data: tipData }] = await Promise.all([
+      const [{ data: matchData }, { data: tipData }, { data: predData }] = await Promise.all([
         supabase.from('matches').select('*').order('starts_at'),
         supabase.from('tips').select('*').eq('user_id', user!.id),
+        supabase.from('tournament_predictions').select('*').eq('user_id', user!.id).maybeSingle(),
       ])
 
       if (matchData) {
@@ -128,6 +277,8 @@ export function MatchesPage() {
         tipData.forEach((t: UserTip) => map.set(t.match_id, t))
         setTips(map)
       }
+
+      if (predData) setPrediction(predData)
 
       setLoading(false)
     }
@@ -184,6 +335,24 @@ export function MatchesPage() {
     setSaving(null)
   }
 
+  const savePrediction = async (first: string, second: string, third: string) => {
+    if (groupLocked || !first || !second || !third) return
+    setPredSaving(true)
+    const { data } = await supabase
+      .from('tournament_predictions')
+      .upsert(
+        { user_id: user!.id, first_place: first, second_place: second, third_place: third },
+        { onConflict: 'user_id' },
+      )
+      .select().single()
+    if (data) setPrediction(data)
+    setPredSaving(false)
+  }
+
+  const allTeams = [...new Set(
+    groupMatches.flatMap(m => [m.home_team, m.away_team].filter(Boolean) as string[])
+  )].sort((a, b) => a.localeCompare(b, 'sv'))
+
   const rounds = [...new Set(groupMatches.map(m => m.round))]
     .sort((a, b) => GROUP_ROUNDS.indexOf(a) - GROUP_ROUNDS.indexOf(b))
 
@@ -207,7 +376,7 @@ export function MatchesPage() {
     <div>
       {/* Round tabs */}
           <div className="flex flex-wrap gap-2 mb-6">
-            {rounds.map(round => (
+            {[...rounds, 'topp3'].map(round => (
               <button
                 key={round}
                 onClick={() => setActiveRound(round)}
@@ -217,10 +386,21 @@ export function MatchesPage() {
                     : 'bg-gray-900 text-gray-400 hover:text-white hover:bg-gray-800 border border-gray-700'
                 }`}
               >
-                {ROUND_LABEL[round] ?? round}
+                {round === 'topp3' ? 'Topp 3' : (ROUND_LABEL[round] ?? round)}
               </button>
             ))}
           </div>
+
+      {activeRound === 'topp3' ? (
+        <Topp3View
+          allTeams={allTeams}
+          prediction={prediction}
+          groupLocked={groupLocked}
+          allMatches={allMatches}
+          onSave={savePrediction}
+          saving={predSaving}
+        />
+      ) : (<>
 
       {/* Grupptabeller */}
       <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -350,6 +530,7 @@ export function MatchesPage() {
       <p className="text-gray-600 text-xs mt-4 text-center">
         Exakt resultat = 30p &nbsp;·&nbsp; Rätt utfall = 10–20p &nbsp;·&nbsp; Fel = 0p
       </p>
+      </>)}
     </div>
   )
 }
