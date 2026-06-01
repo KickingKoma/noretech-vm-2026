@@ -376,7 +376,7 @@ export function MatchesPage() {
     <div>
       {/* Round tabs */}
           <div className="flex flex-wrap gap-2 mb-6">
-            {[...rounds, 'topp3'].map(round => (
+            {['topp3', ...rounds].map(round => (
               <button
                 key={round}
                 onClick={() => setActiveRound(round)}
