@@ -8,6 +8,90 @@ import { Flag } from '../components/Flag'
 
 interface DraftTip { home: string; away: string }
 
+interface Standing {
+  team: string
+  s: number
+  v: number
+  o: number
+  f: number
+  diff: number
+  pts: number
+}
+
+function computeStandings(
+  matches: Match[],
+  getScore: (m: Match) => { home: number; away: number } | null,
+): Standing[] {
+  const map = new Map<string, Standing>()
+  for (const m of matches) {
+    if (m.home_team && !map.has(m.home_team))
+      map.set(m.home_team, { team: m.home_team, s: 0, v: 0, o: 0, f: 0, diff: 0, pts: 0 })
+    if (m.away_team && !map.has(m.away_team))
+      map.set(m.away_team, { team: m.away_team, s: 0, v: 0, o: 0, f: 0, diff: 0, pts: 0 })
+  }
+  for (const match of matches) {
+    if (!match.home_team || !match.away_team) continue
+    const score = getScore(match)
+    if (!score) continue
+    const home = map.get(match.home_team)!
+    const away = map.get(match.away_team)!
+    home.s++; away.s++
+    home.diff += score.home - score.away
+    away.diff += score.away - score.home
+    if (score.home > score.away) {
+      home.v++; home.pts += 3; away.f++
+    } else if (score.home < score.away) {
+      away.v++; away.pts += 3; home.f++
+    } else {
+      home.o++; home.pts++; away.o++; away.pts++
+    }
+  }
+  return [...map.values()].sort((a, b) =>
+    b.pts - a.pts || b.diff - a.diff || a.team.localeCompare(b.team),
+  )
+}
+
+function StandingsTable({ standings, title }: { standings: Standing[]; title: string }) {
+  return (
+    <div>
+      <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">{title}</p>
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="text-xs text-gray-600 border-b border-gray-800">
+            <th className="text-left font-normal pb-1.5 w-5">#</th>
+            <th className="text-left font-normal pb-1.5">Lag</th>
+            <th className="text-center font-normal pb-1.5 w-7">S</th>
+            <th className="text-center font-normal pb-1.5 w-7">V</th>
+            <th className="text-center font-normal pb-1.5 w-7">O</th>
+            <th className="text-center font-normal pb-1.5 w-7">F</th>
+            <th className="text-center font-normal pb-1.5 w-8">+/-</th>
+            <th className="text-center font-normal pb-1.5 w-7">P</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-800">
+          {standings.map((s, i) => (
+            <tr key={s.team} className={i < 2 ? 'text-white' : 'text-gray-500'}>
+              <td className="py-1.5 text-gray-600 text-xs">{i + 1}</td>
+              <td className="py-1.5">
+                <span className="flex items-center gap-1.5">
+                  <Flag name={s.team} />
+                  <span className="truncate">{s.team}</span>
+                </span>
+              </td>
+              <td className="py-1.5 text-center tabular-nums">{s.s}</td>
+              <td className="py-1.5 text-center tabular-nums">{s.v}</td>
+              <td className="py-1.5 text-center tabular-nums">{s.o}</td>
+              <td className="py-1.5 text-center tabular-nums">{s.f}</td>
+              <td className="py-1.5 text-center tabular-nums">{s.diff > 0 ? `+${s.diff}` : s.diff}</td>
+              <td className="py-1.5 text-center tabular-nums font-bold">{s.pts}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
 export function MatchesPage() {
   const { user } = useAuth()
   const [allMatches, setAllMatches] = useState<Match[]>([])
@@ -103,6 +187,19 @@ export function MatchesPage() {
   const rounds = [...new Set(groupMatches.map(m => m.round))]
     .sort((a, b) => GROUP_ROUNDS.indexOf(a) - GROUP_ROUNDS.indexOf(b))
 
+  const activeGroupMatches = groupMatches.filter(m => m.round === activeRound)
+
+  const tipStandings = computeStandings(activeGroupMatches, m => {
+    const tip = tips.get(m.id)
+    return tip ? { home: tip.home_tip, away: tip.away_tip } : null
+  })
+
+  const realStandings = computeStandings(activeGroupMatches, m =>
+    m.home_score !== null && m.away_score !== null
+      ? { home: m.home_score, away: m.away_score }
+      : null,
+  )
+
   if (loading) return <div className="text-gray-400 text-center py-12">Laddar...</div>
   if (groupMatches.length === 0) return <div className="text-gray-400 text-center py-12">Inga gruppspelsmatcher inlagda än.</div>
 
@@ -125,11 +222,19 @@ export function MatchesPage() {
             ))}
           </div>
 
+      {/* Grupptabeller */}
+      <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="bg-gray-900 rounded-xl p-4 border border-gray-800">
+          <StandingsTable standings={tipStandings} title="Din tippning" />
+        </div>
+        <div className="bg-gray-900 rounded-xl p-4 border border-gray-800">
+          <StandingsTable standings={realStandings} title="Verklig tabell" />
+        </div>
+      </div>
+
       {/* Match list */}
       <div className="space-y-3">
-        {groupMatches
-          .filter(m => m.round === activeRound)
-          .map(match => {
+        {activeGroupMatches.map(match => {
             const savedTip = tips.get(match.id)
             const draft = getDraft(match.id)
             const hasResult = match.home_score !== null && match.away_score !== null
