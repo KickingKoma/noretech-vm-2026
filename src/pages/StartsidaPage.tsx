@@ -210,6 +210,7 @@ export function StartsidaPage() {
           <h3 className="font-semibold text-white mb-1">Så funkar det</h3>
           <ul className="text-sm text-gray-400 space-y-1.5">
             <li>• Tippa alla 72 gruppspelsmatcher innan turneringen startar</li>
+            <li>• Gissa vinnare, tvåa och trea (Topp 3) — också innan turneringen startar</li>
             <li>• Tippa hela slutspelsträdet innan 16-delsfinalen börjar</li>
             <li>• I slutspelet anger du även vinnare (obligatoriskt vid oavgjort)</li>
             <li>• Tips kan ändras hur många gånger som helst innan deadline</li>
@@ -234,6 +235,23 @@ export function StartsidaPage() {
                 <div className="flex justify-between">
                   <span className="text-gray-300">Fel utfall</span>
                   <span className="font-bold text-red-400">0p</span>
+                </div>
+              </div>
+            </div>
+            <div className="border-t border-gray-800 pt-3">
+              <p className="text-xs text-gray-500 uppercase tracking-wide mb-1.5">Topp 3</p>
+              <div className="space-y-1 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-300">Rätt vinnare</span>
+                  <span className="font-bold text-amber-400">50p</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-300">Rätt tvåa</span>
+                  <span className="font-bold text-cyan-400">30p</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-300">Rätt trea</span>
+                  <span className="font-bold text-cyan-400">20p</span>
                 </div>
               </div>
             </div>

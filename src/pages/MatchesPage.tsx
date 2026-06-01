@@ -243,7 +243,7 @@ export function MatchesPage() {
   const [allMatches, setAllMatches] = useState<Match[]>([])
   const [tips, setTips] = useState<Map<string, UserTip>>(new Map())
   const [drafts, setDrafts] = useState<Map<string, DraftTip>>(new Map())
-  const [activeRound, setActiveRound] = useState('')
+  const [activeRound, setActiveRound] = useState('topp3')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState<string | null>(null)
   const [prediction, setPrediction] = useState<TournamentPrediction | null>(null)
@@ -264,12 +264,7 @@ export function MatchesPage() {
 
       if (matchData) {
         setAllMatches(matchData)
-        const rounds = [...new Set(
-          matchData
-            .filter((m: Match) => GROUP_ROUNDS.includes(m.round))
-            .map((m: Match) => m.round)
-        )].sort((a, b) => GROUP_ROUNDS.indexOf(a) - GROUP_ROUNDS.indexOf(b))
-        setActiveRound(rounds[0] ?? '')
+        // activeRound behåller sitt defaultvärde 'topp3'
       }
 
       if (tipData) {
