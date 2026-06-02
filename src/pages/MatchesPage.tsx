@@ -246,6 +246,7 @@ export function MatchesPage() {
   const [activeRound, setActiveRound] = useState('topp3')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState<string | null>(null)
+  const [slumping, setSlumping] = useState(false)
   const [prediction, setPrediction] = useState<TournamentPrediction | null>(null)
   const [predSaving, setPredSaving] = useState(false)
 
@@ -330,6 +331,40 @@ export function MatchesPage() {
     setSaving(null)
   }
 
+  const slumpaTips = async () => {
+    if (groupLocked || slumping) return
+    const untipped = activeGroupMatches.filter(m => !tips.has(m.id))
+    if (untipped.length === 0) return
+
+    setSlumping(true)
+    const newTips = untipped.map(m => ({
+      user_id: user!.id,
+      match_id: m.id,
+      home_tip: Math.floor(Math.random() * 6),
+      away_tip: Math.floor(Math.random() * 6),
+      winner_tip: null,
+    }))
+
+    const { data } = await supabase
+      .from('tips')
+      .upsert(newTips, { onConflict: 'user_id,match_id' })
+      .select()
+
+    if (data) {
+      setTips(prev => {
+        const m = new Map(prev)
+        data.forEach((t: UserTip) => m.set(t.match_id, t))
+        return m
+      })
+      setDrafts(prev => {
+        const m = new Map(prev)
+        untipped.forEach(match => m.delete(match.id))
+        return m
+      })
+    }
+    setSlumping(false)
+  }
+
   const savePrediction = async (first: string, second: string, third: string) => {
     if (groupLocked || !first || !second || !third) return
     setPredSaving(true)
@@ -406,6 +441,19 @@ export function MatchesPage() {
           <StandingsTable standings={realStandings} title="Verklig tabell" />
         </div>
       </div>
+
+      {/* Slumpa-knapp */}
+      {!groupLocked && activeGroupMatches.some(m => !tips.has(m.id)) && (
+        <div className="flex justify-end mb-3">
+          <button
+            onClick={slumpaTips}
+            disabled={slumping}
+            className="px-3 py-1.5 rounded text-sm font-medium bg-gray-800 border border-gray-700 text-gray-300 hover:text-white hover:border-gray-500 transition-colors disabled:opacity-50"
+          >
+            {slumping ? '...' : 'Slumpa resultat'}
+          </button>
+        </div>
+      )}
 
       {/* Match list */}
       <div className="space-y-3">
