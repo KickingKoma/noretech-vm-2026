@@ -218,6 +218,25 @@ export function StartsidaPage() {
           </ul>
         </div>
 
+        <div className="border-t border-gray-800 pt-4">
+          <h3 className="font-semibold text-white mb-2">Prispott</h3>
+          <p className="text-sm text-gray-400 mb-3">Insats: <span className="text-white font-semibold">100 kr</span> per person. Totalpotten fördelas på topplistan:</p>
+          <div className="space-y-1 text-sm">
+            <div className="flex justify-between">
+              <span className="text-gray-300">🥇 1:a plats</span>
+              <span className="font-bold text-amber-400">50%</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-300">🥈 2:a plats</span>
+              <span className="font-bold text-cyan-400">30%</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-300">🥉 3:e plats</span>
+              <span className="font-bold text-cyan-400">20%</span>
+            </div>
+          </div>
+        </div>
+
         <div>
           <h3 className="font-semibold text-white mb-2">Poängsystem</h3>
           <div className="space-y-3">
@@ -242,15 +261,15 @@ export function StartsidaPage() {
               <p className="text-xs text-gray-500 uppercase tracking-wide mb-1.5">Topp 3</p>
               <div className="space-y-1 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-gray-300">Rätt vinnare</span>
+                  <span className="text-gray-300">Rätt VM-etta</span>
                   <span className="font-bold text-amber-400">200p</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-300">Rätt tvåa</span>
+                  <span className="text-gray-300">Rätt VM-tvåa</span>
                   <span className="font-bold text-cyan-400">100p</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-300">Rätt trea</span>
+                  <span className="text-gray-300">Rätt VM-trea</span>
                   <span className="font-bold text-cyan-400">50p</span>
                 </div>
               </div>
@@ -282,6 +301,21 @@ export function StartsidaPage() {
         <div className="border-t border-gray-800 pt-3 text-xs text-gray-500">
           Poäng för "nära" räknas som: 20 − (antal mål fel), med golv på 10p.
           Exempel: du tippar 3–1, resultatet blir 5–2 → diff = 3 → 20−3 = 17p.
+        </div>
+
+        <div className="border-t border-gray-800 pt-4">
+          <h3 className="font-semibold text-white mb-2">Vid lika poäng</h3>
+          <p className="text-sm text-gray-400 mb-2">Placering avgörs i följande ordning:</p>
+          <ol className="text-sm text-gray-400 space-y-1.5 list-none">
+            <li><span className="text-gray-500 mr-2">1.</span>Högst totalpoäng</li>
+            <li><span className="text-gray-500 mr-2">2.</span>Rätt VM-etta</li>
+            <li><span className="text-gray-500 mr-2">3.</span>Rätt VM-tvåa</li>
+            <li><span className="text-gray-500 mr-2">4.</span>Rätt VM-trea</li>
+            <li><span className="text-gray-500 mr-2">5.</span>Flest rätta tippningar</li>
+            <li><span className="text-gray-500 mr-2">6.</span>Tippat ett lag som spelade finalen (som VM-etta eller VM-tvåa)</li>
+            <li><span className="text-gray-500 mr-2">7.</span>Tippat ett lag som spelade bronsmatchen (som VM-trea)</li>
+            <li><span className="text-gray-500 mr-2">8.</span>Rätt tippat resultat i finalen</li>
+          </ol>
         </div>
       </div>
 
