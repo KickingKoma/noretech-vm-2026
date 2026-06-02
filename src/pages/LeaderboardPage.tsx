@@ -111,7 +111,7 @@ export function LeaderboardPage() {
         </table>
       </div>
       <p className="text-gray-600 text-xs mt-2 text-right">
-        Exakt = 30p &nbsp;·&nbsp; Rätt utfall = 10–20p &nbsp;·&nbsp; Fel = 0p
+        Exakt = 30p &nbsp;·&nbsp; Rätt utfall = 10–19p &nbsp;·&nbsp; Fel = 0p
       </p>
     </div>
   )

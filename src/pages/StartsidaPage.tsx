@@ -230,7 +230,7 @@ export function StartsidaPage() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-300">Rätt utfall (1/X/2), nära</span>
-                  <span className="font-bold text-cyan-400">10–20p</span>
+                  <span className="font-bold text-cyan-400">10–19p</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-300">Fel utfall</span>
@@ -264,7 +264,7 @@ export function StartsidaPage() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-300">Rätt vinnare + rätt utfall</span>
-                  <span className="font-bold text-cyan-400">10–20p</span>
+                  <span className="font-bold text-cyan-400">10–19p</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-300">Rätt vinnare, fel utfall</span>

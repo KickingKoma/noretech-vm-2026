@@ -571,7 +571,7 @@ export function MatchesPage() {
           </div>
 
       <p className="text-gray-600 text-xs mt-4 text-center">
-        Exakt resultat = 30p &nbsp;·&nbsp; Rätt utfall = 10–20p &nbsp;·&nbsp; Fel = 0p
+        Exakt resultat = 30p &nbsp;·&nbsp; Rätt utfall = 10–19p &nbsp;·&nbsp; Fel = 0p
       </p>
       </>)}
     </div>

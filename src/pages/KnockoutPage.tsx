@@ -331,7 +331,7 @@ export function KnockoutPage() {
       })}
 
       <p className="text-gray-600 text-xs mt-4 text-center">
-        Exakt = 30p &nbsp;·&nbsp; Rätt vinnare + utfall = 10–20p &nbsp;·&nbsp; Rätt vinnare = 5p &nbsp;·&nbsp; Fel = 0p
+        Exakt = 30p &nbsp;·&nbsp; Rätt vinnare + utfall = 10–19p &nbsp;·&nbsp; Rätt vinnare = 5p &nbsp;·&nbsp; Fel = 0p
       </p>
     </div>
   )
