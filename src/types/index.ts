@@ -73,10 +73,7 @@ export function calcPoints(
     if (correctOutcome) return Math.max(10, 20 - diff)
     return 0
   } else {
-    if (!correctWinner) return 0
-    if (exactScore) return 30
-    if (correctOutcome) return Math.max(10, 20 - diff)
-    return 5
+    return tipWinner === matchWinner ? 30 : 0
   }
 }
 

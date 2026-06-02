@@ -13,8 +13,6 @@ function formatDeadline(d: Date): string {
 }
 
 interface DraftTip {
-  home: string
-  away: string
   winner: string
 }
 
@@ -56,55 +54,26 @@ export function KnockoutPage() {
     load()
   }, [user])
 
-  const getDraft = (match: Match, _homeTeam: string, _awayTeam: string): DraftTip => {
+  const getDraft = (match: Match): DraftTip => {
     if (drafts.has(match.id)) return drafts.get(match.id)!
     const saved = tips.get(match.id)
-    return {
-      home: saved?.home_tip?.toString() ?? '',
-      away: saved?.away_tip?.toString() ?? '',
-      winner: saved?.winner_tip ?? '',
-    }
+    return { winner: saved?.winner_tip ?? '' }
   }
 
-  const updateDraft = (matchId: string, field: keyof DraftTip, value: string) => {
-    setDrafts(prev => {
-      const current = prev.get(matchId) ?? { home: '', away: '', winner: '' }
-      const updated = { ...current, [field]: value }
-
-      // Auto-set winner from score when unambiguous
-      if (field === 'home' || field === 'away') {
-        const h = parseInt(field === 'home' ? value : current.home)
-        const a = parseInt(field === 'away' ? value : current.away)
-        if (!isNaN(h) && !isNaN(a) && h !== a) {
-          // winner will be set when we have team context — handled in save
-        }
-      }
-
-      return new Map(prev).set(matchId, updated)
-    })
+  const updateDraft = (matchId: string, winner: string) => {
+    setDrafts(prev => new Map(prev).set(matchId, { winner }))
   }
 
-  const saveTip = async (match: Match, homeTeam: string, awayTeam: string) => {
+  const saveTip = async (match: Match) => {
     if (knockoutLocked) return
-    const draft = getDraft(match, homeTeam, awayTeam)
-    if (draft.home === '' || draft.away === '') return
-
-    const h = parseInt(draft.home)
-    const a = parseInt(draft.away)
-    if (isNaN(h) || isNaN(a) || h < 0 || a < 0) return
-
-    // Derive winner from score if not a draw
-    let winner = draft.winner
-    if (h !== a) {
-      winner = h > a ? homeTeam : awayTeam
-    }
-    if (!winner) return // draw but no winner picked
+    const draft = getDraft(match)
+    if (!draft.winner) return
 
     setSaving(match.id)
     const { data } = await supabase
       .from('tips')
       .upsert(
-        { user_id: user!.id, match_id: match.id, home_tip: h, away_tip: a, winner_tip: winner },
+        { user_id: user!.id, match_id: match.id, home_tip: 0, away_tip: 0, winner_tip: draft.winner },
         { onConflict: 'user_id,match_id' },
       )
       .select().single()
@@ -165,34 +134,18 @@ export function KnockoutPage() {
                   && awayTeam !== '?' && awayTeam !== 'TBD'
 
                 const savedTip = tips.get(match.id)
-                const draft = getDraft(match, homeTeam, awayTeam)
+                const draft = getDraft(match)
                 const isSaving = saving === match.id
-                const hasResult = match.home_score !== null && match.away_score !== null
+                const hasResult = match.winner_team !== null
 
                 let pointsEarned: number | null = null
-                if (hasResult && savedTip && match.winner_team) {
-                  pointsEarned = calcPoints(
-                    match.home_score!, match.away_score!, match.winner_team,
-                    savedTip.home_tip, savedTip.away_tip, savedTip.winner_tip,
-                    true,
-                  )
+                if (hasResult && savedTip?.winner_tip) {
+                  pointsEarned = savedTip.winner_tip === match.winner_team ? 30 : 0
                 }
 
-                const draftHome = parseInt(draft.home)
-                const draftAway = parseInt(draft.away)
-                const isDraw = !isNaN(draftHome) && !isNaN(draftAway) && draftHome === draftAway
-                const impliedWinner = (!isNaN(draftHome) && !isNaN(draftAway) && draftHome !== draftAway)
-                  ? (draftHome > draftAway ? homeTeam : awayTeam)
-                  : null
-
-                const savedOrDraftWinner = impliedWinner ?? draft.winner
-
                 const hasSavedTip = !!savedTip
-                const isDirty = !knockoutLocked && teamsKnown && (
-                  draft.home !== (savedTip?.home_tip?.toString() ?? '') ||
-                  draft.away !== (savedTip?.away_tip?.toString() ?? '') ||
-                  savedOrDraftWinner !== (savedTip?.winner_tip ?? '')
-                )
+                const isDirty = !knockoutLocked && teamsKnown &&
+                  draft.winner !== (savedTip?.winner_tip ?? '')
 
                 return (
                   <div key={match.id} className={`bg-gray-900 rounded-xl p-4 border ${
@@ -207,9 +160,7 @@ export function KnockoutPage() {
                       <div className="flex items-center gap-2">
                         {pointsEarned !== null && (
                           <span className={`text-xs font-bold px-2 py-0.5 rounded ${
-                            pointsEarned === 30 ? 'bg-amber-600 text-amber-100' :
-                            pointsEarned > 0 ? 'bg-cyan-800 text-cyan-200' :
-                            'bg-red-900 text-red-300'
+                            pointsEarned === 30 ? 'bg-amber-600 text-amber-100' : 'bg-red-900 text-red-300'
                           }`}>{pointsEarned}p</span>
                         )}
                         {!teamsKnown && (
@@ -219,99 +170,64 @@ export function KnockoutPage() {
                     </div>
 
                     {/* Lag */}
-                    <div className="flex justify-between mb-2">
+                    <div className="flex justify-between mb-3">
                       <span className={`font-medium flex items-center gap-1.5 ${teamsKnown ? 'text-white' : 'text-gray-500'}`}><Flag name={homeTeam} />{homeTeam}</span>
                       <span className={`font-medium flex items-center gap-1.5 ${teamsKnown ? 'text-white' : 'text-gray-500'}`}>{awayTeam}<Flag name={awayTeam} /></span>
                     </div>
 
-                    {/* Resultat + tips */}
-                    <div className="flex items-center justify-center gap-3 mb-3">
-                      {hasResult && (
-                        <div className="text-center">
-                          <div className="text-xs text-gray-500 mb-1">Resultat</div>
-                          <span className="text-lg font-bold text-white tabular-nums">
-                            {match.home_score}–{match.away_score}
-                          </span>
-                          {match.winner_team && (
-                            <div className="text-xs text-green-400 mt-0.5">{match.winner_team} vidare</div>
-                          )}
-                        </div>
-                      )}
-
-                      {!knockoutLocked && teamsKnown ? (
-                        <div className="flex items-center gap-2">
-                          <input type="text" inputMode="numeric" pattern="[0-9]*"
-                            value={draft.home}
-                            onChange={e => updateDraft(match.id, 'home', e.target.value.replace(/[^0-9]/g, ''))}
-                            placeholder="–"
-                            className="w-14 bg-gray-800 text-white text-center rounded px-1 py-2 border border-gray-700 focus:border-cyan-500 focus:outline-none tabular-nums text-lg"
-                          />
-                          <span className="text-gray-500 font-bold">–</span>
-                          <input type="text" inputMode="numeric" pattern="[0-9]*"
-                            value={draft.away}
-                            onChange={e => updateDraft(match.id, 'away', e.target.value.replace(/[^0-9]/g, ''))}
-                            placeholder="–"
-                            className="w-14 bg-gray-800 text-white text-center rounded px-1 py-2 border border-gray-700 focus:border-cyan-500 focus:outline-none tabular-nums text-lg"
-                          />
-                        </div>
-                      ) : savedTip ? (
-                        <div className="text-center">
-                          <div className="text-xs text-gray-500 mb-1">Mitt tips</div>
-                          <span className={`text-lg font-bold tabular-nums ${
-                            pointsEarned === 30 ? 'text-amber-400' :
-                            pointsEarned! > 0 ? 'text-cyan-400' :
-                            pointsEarned === 0 ? 'text-red-400' :
-                            'text-gray-300'
-                          }`}>
-                            {savedTip.home_tip}–{savedTip.away_tip}
-                          </span>
-                        </div>
-                      ) : null}
-                    </div>
-
-                    {/* Winner picker */}
-                    {!knockoutLocked && teamsKnown && (
-                      <div className="flex items-center gap-2 mt-2">
-                        <span className="text-xs text-gray-500 shrink-0">Vinnare:</span>
-                        {[homeTeam, awayTeam].map(team => {
-                          const isSelected = savedOrDraftWinner === team
-                          const isImplied = impliedWinner === team
-                          return (
-                            <button
-                              key={team}
-                              onClick={() => updateDraft(match.id, 'winner', team)}
-                              disabled={!!impliedWinner}
-                              className={`flex-1 py-1.5 rounded text-sm font-medium transition-colors truncate px-2 ${
-                                isSelected && !isDraw
-                                  ? 'bg-cyan-700 text-white'
-                                  : 'bg-gray-800 text-gray-400 hover:text-white'
-                              } ${isImplied ? 'opacity-70 cursor-default' : ''}`}
-                            >
-                              {team}
-                            </button>
-                          )
-                        })}
+                    {/* Faktiskt resultat */}
+                    {hasResult && (
+                      <div className="text-center mb-3">
+                        <div className="text-xs text-gray-500 mb-1">Resultat</div>
+                        <span className="text-lg font-bold text-white tabular-nums">
+                          {match.home_score}–{match.away_score}
+                        </span>
+                        <div className="text-xs text-green-400 mt-0.5">{match.winner_team} vidare</div>
                       </div>
                     )}
 
-                    {/* Locked: show saved winner */}
-                    {(knockoutLocked || !teamsKnown) && savedTip?.winner_tip && (
-                      <div className="mt-2 text-xs text-gray-500">
-                        Vinnartips: <span className={`font-medium ${
-                          hasResult && match.winner_team === savedTip.winner_tip ? 'text-green-400' :
-                          hasResult ? 'text-red-400' : 'text-gray-300'
-                        }`}>{savedTip.winner_tip}</span>
+                    {/* Vinnarpick — öppen */}
+                    {!knockoutLocked && teamsKnown && (
+                      <div className="flex gap-2">
+                        {[homeTeam, awayTeam].map(team => (
+                          <button
+                            key={team}
+                            onClick={() => updateDraft(match.id, team)}
+                            className={`flex-1 py-2 rounded text-sm font-medium transition-colors truncate px-2 flex items-center justify-center gap-1.5 ${
+                              draft.winner === team
+                                ? 'bg-cyan-700 text-white'
+                                : 'bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700'
+                            }`}
+                          >
+                            <Flag name={team} />{team}
+                          </button>
+                        ))}
                       </div>
+                    )}
+
+                    {/* Sparat vinnartips — låst eller ej kända lag */}
+                    {(knockoutLocked || !teamsKnown) && savedTip?.winner_tip && (
+                      <div className={`text-center py-1.5 rounded text-sm font-medium flex items-center justify-center gap-1.5 ${
+                        hasResult && match.winner_team === savedTip.winner_tip ? 'text-green-400' :
+                        hasResult ? 'text-red-400' : 'text-gray-300'
+                      }`}>
+                        <Flag name={savedTip.winner_tip} />{savedTip.winner_tip} vidare
+                      </div>
+                    )}
+
+                    {/* Ej tippat — låst */}
+                    {(knockoutLocked || !teamsKnown) && !savedTip && teamsKnown && (
+                      <div className="text-center text-xs text-gray-600 italic">Ej tippat</div>
                     )}
 
                     {/* Save button */}
                     {!knockoutLocked && teamsKnown && (
                       <div className="mt-3 flex justify-end">
                         <button
-                          onClick={() => saveTip(match, homeTeam, awayTeam)}
-                          disabled={isSaving || (!isDirty && hasSavedTip) || (isDraw && !draft.winner)}
+                          onClick={() => saveTip(match)}
+                          disabled={isSaving || !draft.winner || (!isDirty && hasSavedTip)}
                           className={`px-4 py-1.5 rounded text-sm font-medium transition-colors ${
-                            isDirty
+                            isDirty || (!hasSavedTip && draft.winner)
                               ? 'bg-cyan-600 hover:bg-cyan-500 text-white'
                               : hasSavedTip
                               ? 'bg-gray-700 text-gray-400 cursor-default'
@@ -331,7 +247,7 @@ export function KnockoutPage() {
       })}
 
       <p className="text-gray-600 text-xs mt-4 text-center">
-        Exakt = 30p &nbsp;·&nbsp; Rätt vinnare + utfall = 10–19p &nbsp;·&nbsp; Rätt vinnare = 5p &nbsp;·&nbsp; Fel = 0p
+        Rätt lag går vidare = 30p &nbsp;·&nbsp; Fel = 0p
       </p>
     </div>
   )

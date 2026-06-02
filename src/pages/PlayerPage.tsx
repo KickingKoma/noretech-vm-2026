@@ -130,40 +130,55 @@ export function PlayerPage() {
           <span className="font-medium text-white flex items-center gap-1.5">{awayTeam}<Flag name={awayTeam} /></span>
         </div>
 
-        <div className="flex items-center justify-center gap-6">
-          {hasResult && (
-            <div className="text-center">
-              <div className="text-xs text-gray-500 mb-1">Resultat</div>
-              <span className="text-lg font-bold text-white tabular-nums">
-                {match.home_score}–{match.away_score}
-              </span>
-              {isKnockout && match.winner_team && (
-                <div className="text-xs text-green-400 mt-0.5">{match.winner_team} vidare</div>
-              )}
-            </div>
-          )}
-          {tip ? (
-            <div className="text-center">
-              <div className="text-xs text-gray-500 mb-1">Tips</div>
-              <span className={`text-lg font-bold tabular-nums ${
-                pts === 30 ? 'text-amber-400' :
-                pts !== null && pts > 0 ? 'text-cyan-400' :
-                pts === 0 ? 'text-red-400' :
-                'text-gray-300'
-              }`}>
-                {tip.home_tip}–{tip.away_tip}
-              </span>
-              {isKnockout && tip.winner_tip && (
-                <div className={`text-xs mt-0.5 ${
-                  hasResult && match.winner_team === tip.winner_tip ? 'text-green-400' :
-                  hasResult ? 'text-red-400' : 'text-gray-400'
+        {isKnockout ? (
+          <div className="flex items-center justify-center gap-6">
+            {match.winner_team && (
+              <div className="text-center">
+                <div className="text-xs text-gray-500 mb-1">Resultat</div>
+                <div className="text-sm font-medium text-white">{match.home_score}–{match.away_score}</div>
+                <div className="text-xs text-green-400">{match.winner_team} vidare</div>
+              </div>
+            )}
+            {tip?.winner_tip ? (
+              <div className="text-center">
+                <div className="text-xs text-gray-500 mb-1">Tips</div>
+                <div className={`text-sm font-bold ${
+                  pts === 30 ? 'text-amber-400' :
+                  pts === 0 ? 'text-red-400' :
+                  'text-gray-300'
                 }`}>{tip.winner_tip} vidare</div>
-              )}
-            </div>
-          ) : (
-            <span className="text-xs text-gray-600 italic">Ej tippat</span>
-          )}
-        </div>
+              </div>
+            ) : (
+              <span className="text-xs text-gray-600 italic">Ej tippat</span>
+            )}
+          </div>
+        ) : (
+          <div className="flex items-center justify-center gap-6">
+            {hasResult && (
+              <div className="text-center">
+                <div className="text-xs text-gray-500 mb-1">Resultat</div>
+                <span className="text-lg font-bold text-white tabular-nums">
+                  {match.home_score}–{match.away_score}
+                </span>
+              </div>
+            )}
+            {tip ? (
+              <div className="text-center">
+                <div className="text-xs text-gray-500 mb-1">Tips</div>
+                <span className={`text-lg font-bold tabular-nums ${
+                  pts === 30 ? 'text-amber-400' :
+                  pts !== null && pts > 0 ? 'text-cyan-400' :
+                  pts === 0 ? 'text-red-400' :
+                  'text-gray-300'
+                }`}>
+                  {tip.home_tip}–{tip.away_tip}
+                </span>
+              </div>
+            ) : (
+              <span className="text-xs text-gray-600 italic">Ej tippat</span>
+            )}
+          </div>
+        )}
       </div>
     )
   }

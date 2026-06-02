@@ -214,7 +214,7 @@ export function StartsidaPage() {
             <li>• Slutspelet tippar du omgång för omgång — varje omgång har en egen deadline</li>
             <li>• 16-delsfinalen tippar du innan den börjar, sedan 8-delsfinalen osv.</li>
             <li>• Finalen och matchen om tredje pris räknas som samma omgång</li>
-            <li>• I slutspelet anger du även vinnare (obligatoriskt vid oavgjort)</li>
+            <li>• I slutspelet anger du endast vilket lag som går vidare</li>
             <li>• Tips kan ändras hur många gånger som helst innan deadline</li>
             <li>• Efter deadline går det inte att ändra — inte ens för admin</li>
           </ul>
@@ -280,19 +280,11 @@ export function StartsidaPage() {
               <p className="text-xs text-gray-500 uppercase tracking-wide mb-1.5">Slutspel</p>
               <div className="space-y-1 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-gray-300">Exakt + rätt vinnare</span>
+                  <span className="text-gray-300">Rätt lag går vidare</span>
                   <span className="font-bold text-amber-400">30p</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-300">Rätt vinnare + rätt utfall</span>
-                  <span className="font-bold text-cyan-400">10–19p</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-300">Rätt vinnare, fel utfall</span>
-                  <span className="font-bold text-cyan-400">5p</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-300">Fel vinnare</span>
+                  <span className="text-gray-300">Fel lag</span>
                   <span className="font-bold text-red-400">0p</span>
                 </div>
               </div>
@@ -301,7 +293,7 @@ export function StartsidaPage() {
         </div>
 
         <div className="border-t border-gray-800 pt-3 text-xs text-gray-500">
-          Poäng för "nära" räknas som: 20 − (antal mål fel), med golv på 10p.
+          Poäng för "nära" i gruppspelet räknas som: 20 − (antal mål fel), med golv på 10p.
           Exempel: du tippar 3–1, resultatet blir 5–2 → diff = 3 → 20−3 = 17p.
         </div>
 
