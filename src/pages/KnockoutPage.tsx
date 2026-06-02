@@ -25,7 +25,7 @@ export function KnockoutPage() {
   const [saving, setSaving] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
-  const { knockoutDeadline, knockoutLocked } = useDeadlines(allMatches)
+  const { nextKnockoutDeadline, allKnockoutLocked, isRoundLocked, roundDeadlines } = useDeadlines(allMatches)
 
   const knockoutMatches = useMemo(
     () => allMatches.filter(m => KNOCKOUT_ROUNDS.includes(m.round)),
@@ -66,7 +66,7 @@ export function KnockoutPage() {
   }
 
   const saveTip = async (match: Match) => {
-    if (knockoutLocked) return
+    if (isRoundLocked(match.round)) return
     const draft = getDraft(match)
     if (!draft.winner) return
 
@@ -87,6 +87,7 @@ export function KnockoutPage() {
   }
 
   const tippedCount = knockoutMatches.filter(m => tips.has(m.id)).length
+  const openMatches = knockoutMatches.filter(m => !isRoundLocked(m.round)).length
 
   if (loading) return <div className="text-gray-400 text-center py-12">Laddar...</div>
 
@@ -103,21 +104,21 @@ export function KnockoutPage() {
       <>
       {/* Deadline banner */}
       <div className={`rounded-xl p-4 mb-6 border ${
-        knockoutLocked
+        allKnockoutLocked
           ? 'bg-gray-900 border-red-800 text-red-300'
           : 'bg-gray-900 border-cyan-800 text-cyan-300'
       }`}>
-        {knockoutLocked ? (
-          <p className="font-medium">Slutspelstipsningen är stängd — 16-delsfinalen har börjat.</p>
+        {allKnockoutLocked ? (
+          <p className="font-medium">Slutspelstipsningen är stängd.</p>
         ) : (
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div>
-              <p className="font-medium">Tippa hela slutspelet innan deadline!</p>
-              {knockoutDeadline && (
-                <p className="text-sm opacity-75">Stänger: {formatDeadline(knockoutDeadline)}</p>
+              <p className="font-medium">Tippa slutspelet — varje omgång låser sig separat!</p>
+              {nextKnockoutDeadline && (
+                <p className="text-sm opacity-75">Nästa deadline: {formatDeadline(nextKnockoutDeadline)}</p>
               )}
             </div>
-            <span className="text-sm">{tippedCount}/{knockoutMatches.length} tippade</span>
+            <span className="text-sm">{tippedCount}/{openMatches} öppna tippade</span>
           </div>
         )}
       </div>
@@ -129,13 +130,21 @@ export function KnockoutPage() {
 
         return (
           <div key={round} className="mb-8">
-            <h2 className="text-lg font-bold text-white mb-3">{ROUND_LABEL[round] ?? round}</h2>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-lg font-bold text-white">{ROUND_LABEL[round] ?? round}</h2>
+              {isRoundLocked(round) ? (
+                <span className="text-xs text-red-400">🔒 Stängd</span>
+              ) : roundDeadlines.get(round) ? (
+                <span className="text-xs text-gray-500">Stänger: {formatDeadline(roundDeadlines.get(round)!)}</span>
+              ) : null}
+            </div>
             <div className="space-y-3">
               {roundMatches.map(match => {
                 const homeTeam = getEffectiveTeam(match, 'home', matchMap, tips)
                 const awayTeam = getEffectiveTeam(match, 'away', matchMap, tips)
-                const teamsKnown = homeTeam !== '?' && homeTeam !== 'TBD'
-                  && awayTeam !== '?' && awayTeam !== 'TBD'
+                const isTBD = homeTeam === 'TBD' || awayTeam === 'TBD'
+                const needsTip = homeTeam === '?' || awayTeam === '?'
+                const teamsKnown = !isTBD && !needsTip
 
                 const savedTip = tips.get(match.id)
                 const draft = getDraft(match)
@@ -147,13 +156,14 @@ export function KnockoutPage() {
                   pointsEarned = savedTip.winner_tip === match.winner_team ? 30 : 0
                 }
 
+                const roundLocked = isRoundLocked(match.round)
                 const hasSavedTip = !!savedTip
-                const isDirty = !knockoutLocked && teamsKnown &&
+                const isDirty = !roundLocked && teamsKnown &&
                   draft.winner !== (savedTip?.winner_tip ?? '')
 
                 return (
                   <div key={match.id} className={`bg-gray-900 rounded-xl p-4 border ${
-                    !teamsKnown ? 'border-gray-700 opacity-60' : 'border-gray-700'
+                    needsTip ? 'border-gray-800 opacity-50' : 'border-gray-700'
                   }`}>
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-xs text-gray-500">
@@ -167,16 +177,21 @@ export function KnockoutPage() {
                             pointsEarned === 30 ? 'bg-amber-600 text-amber-100' : 'bg-red-900 text-red-300'
                           }`}>{pointsEarned}p</span>
                         )}
-                        {!teamsKnown && (
-                          <span className="text-xs text-gray-500">Fyll i tidigare rundor först</span>
+                        {needsTip && (
+                          <span className="text-xs text-gray-600">Tippa tidigare omgång</span>
                         )}
                       </div>
                     </div>
 
                     {/* Lag */}
                     <div className="flex justify-between mb-3">
-                      <span className={`font-medium flex items-center gap-1.5 ${teamsKnown ? 'text-white' : 'text-gray-500'}`}><Flag name={homeTeam} />{homeTeam}</span>
-                      <span className={`font-medium flex items-center gap-1.5 ${teamsKnown ? 'text-white' : 'text-gray-500'}`}>{awayTeam}<Flag name={awayTeam} /></span>
+                      <span className={`font-medium flex items-center gap-1.5 ${teamsKnown ? 'text-white' : isTBD ? 'text-gray-500 italic' : 'text-gray-600'}`}>
+                        <Flag name={homeTeam} />{isTBD ? 'TBD' : homeTeam}
+                      </span>
+                      <span className="text-gray-600 self-center text-sm">vs</span>
+                      <span className={`font-medium flex items-center gap-1.5 ${teamsKnown ? 'text-white' : isTBD ? 'text-gray-500 italic' : 'text-gray-600'}`}>
+                        {isTBD ? 'TBD' : awayTeam}<Flag name={awayTeam} />
+                      </span>
                     </div>
 
                     {/* Faktiskt resultat */}
@@ -191,7 +206,7 @@ export function KnockoutPage() {
                     )}
 
                     {/* Vinnarpick — öppen */}
-                    {!knockoutLocked && teamsKnown && (
+                    {!roundLocked && teamsKnown && (
                       <div className="flex gap-2">
                         {[homeTeam, awayTeam].map(team => (
                           <button
@@ -210,7 +225,7 @@ export function KnockoutPage() {
                     )}
 
                     {/* Sparat vinnartips — låst eller ej kända lag */}
-                    {(knockoutLocked || !teamsKnown) && savedTip?.winner_tip && (
+                    {(roundLocked || !teamsKnown) && savedTip?.winner_tip && (
                       <div className={`text-center py-1.5 rounded text-sm font-medium flex items-center justify-center gap-1.5 ${
                         hasResult && match.winner_team === savedTip.winner_tip ? 'text-green-400' :
                         hasResult ? 'text-red-400' : 'text-gray-300'
@@ -220,12 +235,12 @@ export function KnockoutPage() {
                     )}
 
                     {/* Ej tippat — låst */}
-                    {(knockoutLocked || !teamsKnown) && !savedTip && teamsKnown && (
+                    {(roundLocked || !teamsKnown) && !savedTip && teamsKnown && (
                       <div className="text-center text-xs text-gray-600 italic">Ej tippat</div>
                     )}
 
                     {/* Save button */}
-                    {!knockoutLocked && teamsKnown && (
+                    {!roundLocked && teamsKnown && (
                       <div className="mt-3 flex justify-end">
                         <button
                           onClick={() => saveTip(match)}

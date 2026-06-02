@@ -1,7 +1,9 @@
 #!/usr/bin/env node
-// Synkar avgjorda matcher från football-data.org → Supabase
-// Miljövariabler: FOOTBALL_DATA_API_KEY, SUPABASE_SERVICE_ROLE_KEY
-// SUPABASE_URL är valfri (defaultar till projektets URL)
+// Synkar matcher från football-data.org → Supabase
+// - Uppdaterar resultat (poäng, vinnare) för avgjorda matcher
+// - Uppdaterar lagnamn för slutspelsmatcher när de blir kända
+// - Backfyllar api_match_id för gruppspelsmatcher
+// Miljövariabler: FOOTBALL_DATA_API_KEY, SUPABASE_SERVICE_ROLE_KEY, SUPABASE_URL (valfri)
 // Kör: node scripts/sync-results.mjs
 
 import { createClient } from '@supabase/supabase-js'
@@ -13,7 +15,6 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 if (!API_KEY) { console.error('Saknar FOOTBALL_DATA_API_KEY'); process.exit(1) }
 if (!SUPABASE_SERVICE_KEY) { console.error('Saknar SUPABASE_SERVICE_ROLE_KEY'); process.exit(1) }
 
-// Engelska API-namn → svenska DB-namn
 const EN_TO_SE = {
   'Czech Republic': 'Tjeckien', 'Czechia': 'Tjeckien',
   'Bosnia-Herzegovina': 'Bosnien-Hercegovina', 'Bosnia and Herzegovina': 'Bosnien-Hercegovina',
@@ -43,6 +44,25 @@ const EN_TO_SE = {
   'Croatia': 'Kroatien',
   'Germany': 'Tyskland',
   'Morocco': 'Marocko',
+  'South Africa': 'Sydafrika',
+  'South Korea': 'Sydkorea',
+  'Canada': 'Kanada',
+  'Serbia': 'Serbien',
+  'Slovenia': 'Slovenien',
+  'Slovakia': 'Slovakien',
+  'Hungary': 'Ungern',
+  'Romania': 'Rumänien',
+  'Greece': 'Grekland',
+  'Denmark': 'Danmark',
+  'Poland': 'Polen',
+  'Ukraine': 'Ukraina',
+  'Russia': 'Ryssland',
+  'China PR': 'Kina', 'China': 'Kina',
+  'Venezuela': 'Venezuela',
+  'Chile': 'Chile',
+  'Peru': 'Peru',
+  'Bolivia': 'Bolivia',
+  'Ecuador': 'Ecuador',
 }
 
 function toSv(name) {
@@ -51,8 +71,8 @@ function toSv(name) {
 
 const KNOCKOUT_STAGES = new Set(['LAST_32', 'LAST_16', 'QUARTER_FINALS', 'SEMI_FINALS', 'THIRD_PLACE', 'FINAL'])
 
-async function fetchFinishedMatches() {
-  const res = await fetch('https://api.football-data.org/v4/competitions/WC/matches?status=FINISHED', {
+async function fetchAllMatches() {
+  const res = await fetch('https://api.football-data.org/v4/competitions/WC/matches', {
     headers: { 'X-Auth-Token': API_KEY },
   })
   if (!res.ok) throw new Error(`API-fel ${res.status}: ${await res.text()}`)
@@ -63,22 +83,26 @@ async function fetchFinishedMatches() {
 async function main() {
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
-  console.log('Hämtar avgjorda matcher från football-data.org...')
-  const apiMatches = await fetchFinishedMatches()
-  console.log(`${apiMatches.length} avgjorda matcher i API:t`)
+  console.log('Hämtar matcher från football-data.org...')
+  const apiMatches = await fetchAllMatches()
+  console.log(`${apiMatches.length} matcher i API:t`)
 
-  if (apiMatches.length === 0) {
-    console.log('Inget att uppdatera.')
-    return
-  }
-
-  // Hämta alla matcher från Supabase
-  const { data: dbMatches, error } = await supabase.from('matches').select('id, home_team, away_team, home_score, away_score, winner_team, round')
+  const { data: dbMatches, error } = await supabase
+    .from('matches')
+    .select('id, home_team, away_team, home_score, away_score, winner_team, round, api_match_id')
   if (error) throw new Error(`Supabase-fel: ${error.message}`)
 
-  // Bygg lookup: "hemmalag|bortalag" → DB-match
+  // Primär lookup: api_match_id
+  const dbById = new Map(
+    dbMatches
+      .filter(m => m.api_match_id)
+      .map(m => [m.api_match_id, m])
+  )
+  // Fallback: lagnamn (för gruppspelsmatcher utan api_match_id ännu)
   const dbByTeams = new Map(
-    dbMatches.map(m => [`${m.home_team}|${m.away_team}`, m])
+    dbMatches
+      .filter(m => m.home_team && m.away_team)
+      .map(m => [`${m.home_team}|${m.away_team}`, m])
   )
 
   let updated = 0, skipped = 0, notFound = 0
@@ -86,42 +110,68 @@ async function main() {
   for (const api of apiMatches) {
     const homeEn = api.homeTeam?.name ?? ''
     const awayEn = api.awayTeam?.name ?? ''
-    const homeSv = toSv(homeEn)
-    const awaySv = toSv(awayEn)
+    const homeSv = homeEn ? toSv(homeEn) : null
+    const awaySv = awayEn ? toSv(awayEn) : null
 
-    const db = dbByTeams.get(`${homeSv}|${awaySv}`)
+    // Hitta DB-match: api_match_id i första hand, annars lagnamn
+    let db = dbById.get(api.id) ?? null
+    if (!db && homeSv && awaySv) {
+      db = dbByTeams.get(`${homeSv}|${awaySv}`) ?? null
+    }
+
     if (!db) {
-      console.warn(`  Ej hittad: ${homeEn} (${homeSv}) – ${awayEn} (${awaySv})`)
+      if (homeEn) console.warn(`  Ej hittad: ${homeEn} (${homeSv}) – ${awayEn} (${awaySv})`)
       notFound++
       continue
     }
 
-    const homeScore = api.score?.fullTime?.home ?? null
-    const awayScore = api.score?.fullTime?.away ?? null
-    const isKnockout = KNOCKOUT_STAGES.has(api.stage)
+    const updates = {}
 
-    let winnerTeam = null
-    if (isKnockout && api.score?.winner) {
-      winnerTeam = api.score.winner === 'HOME_TEAM' ? homeSv
-                 : api.score.winner === 'AWAY_TEAM' ? awaySv
-                 : null
+    // Backfyll api_match_id om det saknas
+    if (!db.api_match_id) updates.api_match_id = api.id
+
+    // Uppdatera lagnamn för slutspelsmatcher när API:et får dem
+    if (!db.home_team && homeSv) updates.home_team = homeSv
+    if (!db.away_team && awaySv) updates.away_team = awaySv
+
+    // Uppdatera resultat för avgjorda matcher
+    if (api.status === 'FINISHED') {
+      const homeScore = api.score?.fullTime?.home ?? null
+      const awayScore = api.score?.fullTime?.away ?? null
+      const isKnockout = KNOCKOUT_STAGES.has(api.stage)
+
+      let winnerTeam = null
+      if (isKnockout && api.score?.winner) {
+        const homeTeamSv = db.home_team || homeSv
+        const awayTeamSv = db.away_team || awaySv
+        winnerTeam = api.score.winner === 'HOME_TEAM' ? homeTeamSv
+                   : api.score.winner === 'AWAY_TEAM' ? awayTeamSv
+                   : null
+      }
+
+      if (db.home_score !== homeScore) updates.home_score = homeScore
+      if (db.away_score !== awayScore) updates.away_score = awayScore
+      if (db.winner_team !== winnerTeam) updates.winner_team = winnerTeam
     }
 
-    // Hoppa över om inget har ändrats
-    if (db.home_score === homeScore && db.away_score === awayScore && db.winner_team === winnerTeam) {
+    if (Object.keys(updates).length === 0) {
       skipped++
       continue
     }
 
     const { error: updateError } = await supabase
       .from('matches')
-      .update({ home_score: homeScore, away_score: awayScore, winner_team: winnerTeam })
+      .update(updates)
       .eq('id', db.id)
 
     if (updateError) {
-      console.error(`  Fel vid uppdatering av ${homeSv} – ${awaySv}: ${updateError.message}`)
+      console.error(`  Fel: ${homeEn} – ${awayEn}: ${updateError.message}`)
     } else {
-      console.log(`  ✓ ${homeSv} ${homeScore}–${awayScore} ${awaySv}${winnerTeam ? ` (vinnare: ${winnerTeam})` : ''}`)
+      const parts = []
+      if (updates.home_team || updates.away_team) parts.push(`lag: ${updates.home_team} – ${updates.away_team}`)
+      if (updates.home_score !== undefined) parts.push(`${updates.home_score}–${updates.away_score}`)
+      if (updates.api_match_id) parts.push(`api_id=${updates.api_match_id}`)
+      console.log(`  ✓ ${db.home_team || homeSv} – ${db.away_team || awaySv}: ${parts.join(', ')}`)
       updated++
     }
   }
