@@ -66,7 +66,6 @@ export function calcPoints(
   const diff = Math.abs(tipHome - matchHome) + Math.abs(tipAway - matchAway)
   const exactScore = diff === 0
   const correctOutcome = Math.sign(tipHome - tipAway) === Math.sign(matchHome - matchAway)
-  const correctWinner = isKnockout ? tipWinner === matchWinner : correctOutcome
 
   if (!isKnockout) {
     if (exactScore) return 30

@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { useDeadlines } from '../hooks/useDeadlines'
-import { getEffectiveTeam, calcPoints, KNOCKOUT_ROUNDS, ROUND_LABEL } from '../types'
+import { getEffectiveTeam, KNOCKOUT_ROUNDS, ROUND_LABEL } from '../types'
 import type { Match, UserTip } from '../types'
 import { Flag } from '../components/Flag'
 
