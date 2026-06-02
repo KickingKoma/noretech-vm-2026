@@ -129,7 +129,7 @@ function Topp3View({ allTeams, prediction, groupLocked, allMatches, onSave, savi
 
   const totalPts = resultsKnown && prediction
     ? (['first', 'second', 'third'] as const).reduce((sum, pos) => {
-        const maxPts = pos === 'first' ? 50 : pos === 'second' ? 30 : 20
+        const maxPts = pos === 'first' ? 200 : pos === 'second' ? 100 : 50
         return sum + (saved[pos] && saved[pos] === actual[pos] ? maxPts : 0)
       }, 0)
     : null
@@ -143,9 +143,9 @@ function Topp3View({ allTeams, prediction, groupLocked, allMatches, onSave, savi
   )
 
   const positions: { pos: 'first' | 'second' | 'third'; label: string; maxPts: number }[] = [
-    { pos: 'first', label: 'Vinnare', maxPts: 50 },
-    { pos: 'second', label: 'Tvåa', maxPts: 30 },
-    { pos: 'third', label: 'Trea', maxPts: 20 },
+    { pos: 'first', label: 'Vinnare', maxPts: 200 },
+    { pos: 'second', label: 'Tvåa', maxPts: 100 },
+    { pos: 'third', label: 'Trea', maxPts: 50 },
   ]
 
   return (
@@ -232,7 +232,7 @@ function Topp3View({ allTeams, prediction, groupLocked, allMatches, onSave, savi
       </div>
 
       <p className="text-gray-600 text-xs text-center">
-        Vinnare rätt = 50p &nbsp;·&nbsp; Tvåa rätt = 30p &nbsp;·&nbsp; Trea rätt = 20p
+        Vinnare rätt = 200p &nbsp;·&nbsp; Tvåa rätt = 100p &nbsp;·&nbsp; Trea rätt = 50p
       </p>
     </div>
   )

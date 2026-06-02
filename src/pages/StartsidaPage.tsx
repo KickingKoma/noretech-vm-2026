@@ -243,15 +243,15 @@ export function StartsidaPage() {
               <div className="space-y-1 text-sm">
                 <div className="flex justify-between">
                   <span className="text-gray-300">Rätt vinnare</span>
-                  <span className="font-bold text-amber-400">50p</span>
+                  <span className="font-bold text-amber-400">200p</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-300">Rätt tvåa</span>
-                  <span className="font-bold text-cyan-400">30p</span>
+                  <span className="font-bold text-cyan-400">100p</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-300">Rätt trea</span>
-                  <span className="font-bold text-cyan-400">20p</span>
+                  <span className="font-bold text-cyan-400">50p</span>
                 </div>
               </div>
             </div>
