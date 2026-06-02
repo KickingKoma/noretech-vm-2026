@@ -18,7 +18,7 @@ export function StartsidaPage() {
   const [allMatches, setAllMatches] = useState<Match[]>([])
   const [tips, setTips] = useState<Map<string, UserTip>>(new Map())
 
-  const { groupDeadline, groupLocked, knockoutDeadline, knockoutLocked } = useDeadlines(allMatches)
+  const { groupDeadline, groupLocked, nextKnockoutDeadline, allKnockoutLocked } = useDeadlines(allMatches)
 
   useEffect(() => {
     if (!user) return
@@ -106,12 +106,12 @@ export function StartsidaPage() {
           )}
 
           {knockoutMatches.length > 0 && (
-            <div className={`rounded-xl p-4 border ${knockoutLocked ? 'border-red-900 text-red-300' : 'border-cyan-900 text-cyan-300'} bg-gray-900`}>
+            <div className={`rounded-xl p-4 border ${allKnockoutLocked ? 'border-red-900 text-red-300' : 'border-cyan-900 text-cyan-300'} bg-gray-900`}>
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <div>
-                  <p className="font-semibold">{knockoutLocked ? '🔒 Slutspel — stängt' : '⏳ Slutspel'}</p>
-                  {!knockoutLocked && knockoutDeadline && (
-                    <p className="text-sm opacity-75 mt-0.5">Stänger {formatDeadline(knockoutDeadline)}</p>
+                  <p className="font-semibold">{allKnockoutLocked ? '🔒 Slutspel — stängt' : '⏳ Slutspel'}</p>
+                  {!allKnockoutLocked && nextKnockoutDeadline && (
+                    <p className="text-sm opacity-75 mt-0.5">Nästa deadline: {formatDeadline(nextKnockoutDeadline)}</p>
                   )}
                 </div>
                 {knockoutMatches.length > 0 && (
@@ -121,7 +121,7 @@ export function StartsidaPage() {
                   </div>
                 )}
               </div>
-              {!knockoutLocked && knockoutMatches.length > 0 && (
+              {!allKnockoutLocked && knockoutMatches.length > 0 && (
                 <div className="mt-3 h-1.5 rounded-full bg-gray-700">
                   <div
                     className="h-1.5 rounded-full bg-cyan-500 transition-all"
