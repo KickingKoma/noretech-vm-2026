@@ -5,6 +5,7 @@ import { useDeadlines } from '../hooks/useDeadlines'
 import { getEffectiveTeam, KNOCKOUT_ROUNDS, ROUND_LABEL } from '../types'
 import type { Match, UserTip } from '../types'
 import { Flag } from '../components/Flag'
+import { QualificationSection } from '../components/QualificationSection'
 
 function formatDeadline(d: Date): string {
   return d.toLocaleString('sv-SE', {
@@ -88,15 +89,18 @@ export function KnockoutPage() {
   const tippedCount = knockoutMatches.filter(m => tips.has(m.id)).length
 
   if (loading) return <div className="text-gray-400 text-center py-12">Laddar...</div>
-  if (knockoutMatches.length === 0) {
-    return <div className="text-gray-400 text-center py-12">Slutspelsmatcherna läggs in av admin när grupper är klara.</div>
-  }
 
   const rounds = [...new Set(knockoutMatches.map(m => m.round))]
     .sort((a, b) => KNOCKOUT_ROUNDS.indexOf(a) - KNOCKOUT_ROUNDS.indexOf(b))
 
   return (
     <div>
+      <QualificationSection allMatches={allMatches} tips={tips} />
+
+      {knockoutMatches.length === 0 ? (
+        <div className="text-gray-400 text-center py-12">Slutspelsmatcherna dyker upp när gruppspelet är klart.</div>
+      ) : (
+      <>
       {/* Deadline banner */}
       <div className={`rounded-xl p-4 mb-6 border ${
         knockoutLocked
@@ -249,6 +253,8 @@ export function KnockoutPage() {
       <p className="text-gray-600 text-xs mt-4 text-center">
         Rätt lag går vidare = 30p &nbsp;·&nbsp; Fel = 0p
       </p>
+      </>
+      )}
     </div>
   )
 }
