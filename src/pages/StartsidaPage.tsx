@@ -304,7 +304,7 @@ export function StartsidaPage() {
         </div>
 
         <div className="border-t border-gray-800 pt-4">
-          <h3 className="font-semibold text-white mb-2">Vid lika poäng</h3>
+          <h3 className="font-semibold text-white mb-2">Vem vinner?</h3>
           <p className="text-sm text-gray-400 mb-2">Placering avgörs i följande ordning:</p>
           <ol className="text-sm text-gray-400 space-y-1.5 list-none">
             <li><span className="text-gray-500 mr-2">1.</span>Högst totalpoäng</li>
