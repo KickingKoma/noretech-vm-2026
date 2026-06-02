@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { calcPoints, getEffectiveTeam, KNOCKOUT_ROUNDS, GROUP_ROUNDS, ROUND_LABEL } from '../types'
-import type { Match, UserTip, Profile } from '../types'
+import type { Match, UserTip, Profile, TournamentPrediction } from '../types'
 import { Flag } from '../components/Flag'
 
 export function PlayerPage() {
@@ -10,16 +10,18 @@ export function PlayerPage() {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [allMatches, setAllMatches] = useState<Match[]>([])
   const [tips, setTips] = useState<Map<string, UserTip>>(new Map())
+  const [prediction, setPrediction] = useState<TournamentPrediction | null>(null)
   const [activeRound, setActiveRound] = useState('')
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     if (!userId) return
     async function load() {
-      const [{ data: profileData }, { data: matchData }, { data: tipData }] = await Promise.all([
+      const [{ data: profileData }, { data: matchData }, { data: tipData }, { data: predData }] = await Promise.all([
         supabase.from('profiles').select('*').eq('id', userId).single(),
         supabase.from('matches').select('*').order('starts_at'),
         supabase.from('tips').select('*').eq('user_id', userId),
+        supabase.from('tournament_predictions').select('*').eq('user_id', userId).maybeSingle(),
       ])
       if (profileData) setProfile(profileData)
       if (matchData) {
@@ -36,6 +38,7 @@ export function PlayerPage() {
         tipData.forEach((t: UserTip) => map.set(t.match_id, t))
         setTips(map)
       }
+      if (predData) setPrediction(predData)
       setLoading(false)
     }
     load()
@@ -50,8 +53,29 @@ export function PlayerPage() {
   const knockoutRounds = [...new Set(knockoutMatches.map(m => m.round))]
     .sort((a, b) => KNOCKOUT_ROUNDS.indexOf(a) - KNOCKOUT_ROUNDS.indexOf(b))
 
-  const totalPoints = useMemo(() => {
+  const actual = useMemo(() => {
+    const finalMatch = allMatches.find(m => m.round === 'final')
+    const bronzeMatch = allMatches.find(m => m.round === '3rd')
+    return {
+      first: finalMatch?.winner_team ?? null,
+      second: finalMatch?.winner_team
+        ? (finalMatch.winner_team === finalMatch.home_team ? finalMatch.away_team : finalMatch.home_team) ?? null
+        : null,
+      third: bronzeMatch?.winner_team ?? null,
+    }
+  }, [allMatches])
+
+  const top3Points = useMemo(() => {
+    if (!prediction || !actual.first || !actual.second || !actual.third) return 0
     let pts = 0
+    if (prediction.first_place === actual.first) pts += 200
+    if (prediction.second_place === actual.second) pts += 100
+    if (prediction.third_place === actual.third) pts += 50
+    return pts
+  }, [prediction, actual])
+
+  const totalPoints = useMemo(() => {
+    let pts = top3Points
     for (const [matchId, tip] of tips) {
       const match = matchMap.get(matchId)
       if (!match || match.home_score === null || match.away_score === null) continue
@@ -62,7 +86,7 @@ export function PlayerPage() {
       )
     }
     return pts
-  }, [tips, matchMap])
+  }, [tips, matchMap, top3Points])
 
   function renderMatch(match: Match, isKnockout: boolean) {
     const homeTeam = isKnockout
@@ -167,6 +191,38 @@ export function PlayerPage() {
       {tips.size === 0 && (
         <div className="text-gray-500 text-center py-12 text-sm">
           Tipsen visas efter att tipsningsdeadline passerat.
+        </div>
+      )}
+
+      {prediction && (
+        <div className="mb-8">
+          <h2 className="text-lg font-bold text-white mb-3">Topp 3</h2>
+          <div className="bg-gray-900 rounded-xl p-4 border border-gray-800 space-y-3">
+            {(['first', 'second', 'third'] as const).map((pos) => {
+              const team = prediction[pos === 'first' ? 'first_place' : pos === 'second' ? 'second_place' : 'third_place']
+              const maxPts = pos === 'first' ? 200 : pos === 'second' ? 100 : 50
+              const label = pos === 'first' ? '🥇 Vinnare' : pos === 'second' ? '🥈 Tvåa' : '🥉 Trea'
+              const actualTeam = actual[pos]
+              const hasResult = actualTeam !== null
+              const correct = hasResult && team === actualTeam
+              const pts = hasResult ? (correct ? maxPts : 0) : null
+              return (
+                <div key={pos} className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm text-gray-400 w-20">{label}</span>
+                    <span className="flex items-center gap-1.5 font-medium text-white">
+                      <Flag name={team} />{team}
+                    </span>
+                  </div>
+                  {pts !== null && (
+                    <span className={`text-xs font-bold px-2 py-0.5 rounded ${
+                      pts > 0 ? 'bg-amber-600 text-amber-100' : 'bg-red-900 text-red-300'
+                    }`}>{pts}p</span>
+                  )}
+                </div>
+              )
+            })}
+          </div>
         </div>
       )}
 
