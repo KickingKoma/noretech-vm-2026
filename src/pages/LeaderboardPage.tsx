@@ -39,13 +39,14 @@ export function LeaderboardPage() {
           const match = matchMap.get(tip.match_id)
           if (!match || match.home_score === null || match.away_score === null) continue
           tipped++
+          const isKnockout = KNOCKOUT_ROUNDS.includes(match.round)
           const p = calcPoints(
             match.home_score, match.away_score, match.winner_team,
             tip.home_tip, tip.away_tip, tip.winner_tip,
-            KNOCKOUT_ROUNDS.includes(match.round),
+            isKnockout,
           )
           points += p
-          if (p === 30) exact++
+          if (!isKnockout && p === 30) exact++
           else if (p > 0) outcome++
         }
 
@@ -74,8 +75,8 @@ export function LeaderboardPage() {
             <tr className="border-b border-gray-700 text-gray-400 text-sm">
               <th className="text-left px-4 py-3 w-8">#</th>
               <th className="text-left px-4 py-3">Spelare</th>
-              <th className="text-right px-4 py-3 hidden sm:table-cell" title="Exakt rätt resultat">Exakt</th>
-              <th className="text-right px-4 py-3 hidden sm:table-cell" title="Rätt 1/X/2">Utfall</th>
+              <th className="text-right px-4 py-3 hidden sm:table-cell" title="Exakt rätt resultat (gruppspel)">Exakt</th>
+              <th className="text-right px-4 py-3 hidden sm:table-cell" title="Rätt utfall (gruppspel) eller rätt lag vidare (slutspel)">Utfall</th>
               <th className="text-right px-4 py-3 hidden sm:table-cell">Tippade</th>
               <th className="text-right px-4 py-3 text-amber-400 font-bold">Poäng</th>
             </tr>
@@ -111,7 +112,7 @@ export function LeaderboardPage() {
         </table>
       </div>
       <p className="text-gray-600 text-xs mt-2 text-right">
-        Exakt = 30p &nbsp;·&nbsp; Rätt utfall = 10–19p &nbsp;·&nbsp; Fel = 0p
+        Exakt = 30p (gruppspel) &nbsp;·&nbsp; Utfall = 10–19p (gruppspel) eller rätt lag vidare (slutspel)
       </p>
     </div>
   )
