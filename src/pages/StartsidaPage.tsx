@@ -222,7 +222,7 @@ export function StartsidaPage() {
 
         <div className="border-t border-gray-800 pt-4">
           <h3 className="font-semibold text-white mb-2">Prispott</h3>
-          <p className="text-sm text-gray-400 mb-3">Insats: <span className="text-white font-semibold">100 kr</span> per person. Totalpotten fördelas på topplistan:</p>
+          <p className="text-sm text-gray-400 mb-3">Insats: <span className="text-white font-semibold">100 kalleankapengar</span> per person. Totalpotten fördelas på topplistan:</p>
           <div className="space-y-1 text-sm">
             <div className="flex justify-between">
               <span className="text-gray-300">🥇 1:a plats</span>
