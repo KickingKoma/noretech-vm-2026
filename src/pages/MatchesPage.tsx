@@ -279,6 +279,8 @@ export function MatchesPage() {
       setLoading(false)
     }
     load()
+    const interval = setInterval(load, 5 * 60 * 1000)
+    return () => clearInterval(interval)
   }, [user])
 
   const setDraft = (matchId: string, field: 'home' | 'away', value: string) => {
