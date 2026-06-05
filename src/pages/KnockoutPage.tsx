@@ -53,6 +53,8 @@ export function KnockoutPage() {
       setLoading(false)
     }
     load()
+    const interval = setInterval(load, 5 * 60 * 1000)
+    return () => clearInterval(interval)
   }, [user])
 
   const getDraft = (match: Match): DraftTip => {
@@ -149,10 +151,13 @@ export function KnockoutPage() {
                 const savedTip = tips.get(match.id)
                 const draft = getDraft(match)
                 const isSaving = saving === match.id
-                const hasResult = match.winner_team !== null
+                const isLive = match.status === 'IN_PLAY' || match.status === 'PAUSED'
+                const isFinished = match.status === 'FINISHED'
+                const hasResult = isFinished && match.winner_team !== null
+                const hasLiveScore = (isLive || isFinished) && match.home_score !== null && match.away_score !== null
 
                 let pointsEarned: number | null = null
-                if (hasResult && savedTip?.winner_tip) {
+                if (isFinished && hasResult && savedTip?.winner_tip) {
                   pointsEarned = savedTip.winner_tip === match.winner_team ? 30 : 0
                 }
 
@@ -166,11 +171,19 @@ export function KnockoutPage() {
                     needsTip ? 'border-gray-800 opacity-50' : 'border-gray-700'
                   }`}>
                     <div className="flex items-center justify-between mb-3">
-                      <span className="text-xs text-gray-500">
-                        {new Date(match.starts_at).toLocaleString('sv-SE', {
-                          day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
-                        })}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-gray-500">
+                          {new Date(match.starts_at).toLocaleString('sv-SE', {
+                            day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
+                          })}
+                        </span>
+                        {match.status === 'IN_PLAY' && (
+                          <span className="inline-block bg-green-500 text-white font-bold px-1.5 py-0.5 rounded text-[10px] leading-none animate-pulse">LIVE</span>
+                        )}
+                        {match.status === 'PAUSED' && (
+                          <span className="inline-block bg-yellow-500 text-black font-bold px-1.5 py-0.5 rounded text-[10px] leading-none">HT</span>
+                        )}
+                      </div>
                       <div className="flex items-center gap-2">
                         {pointsEarned !== null && (
                           <span className={`text-xs font-bold px-2 py-0.5 rounded ${
@@ -194,14 +207,21 @@ export function KnockoutPage() {
                       </span>
                     </div>
 
-                    {/* Faktiskt resultat */}
-                    {hasResult && (
+                    {/* Live-score eller slutresultat */}
+                    {hasLiveScore && (
                       <div className="text-center mb-3">
-                        <div className="text-xs text-gray-500 mb-1">Resultat</div>
-                        <span className="text-lg font-bold text-white tabular-nums">
+                        <div className="text-xs mb-1">
+                          {isLive
+                            ? <span className={match.status === 'PAUSED' ? 'text-yellow-500' : 'text-green-500'}>{match.status === 'PAUSED' ? 'Halvtid' : 'Live'}</span>
+                            : <span className="text-gray-500">Resultat</span>
+                          }
+                        </div>
+                        <span className={`text-lg font-bold tabular-nums ${isLive ? (match.status === 'PAUSED' ? 'text-yellow-400' : 'text-green-400') : 'text-white'}`}>
                           {match.home_score}–{match.away_score}
                         </span>
-                        <div className="text-xs text-green-400 mt-0.5">{match.winner_team} vidare</div>
+                        {isFinished && match.winner_team && (
+                          <div className="text-xs text-green-400 mt-0.5">{match.winner_team} vidare</div>
+                        )}
                       </div>
                     )}
 
