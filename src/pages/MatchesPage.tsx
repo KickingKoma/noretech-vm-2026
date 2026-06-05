@@ -460,11 +460,13 @@ export function MatchesPage() {
         {activeGroupMatches.map(match => {
             const savedTip = tips.get(match.id)
             const draft = getDraft(match.id)
-            const hasResult = match.home_score !== null && match.away_score !== null
+            const isLive = match.status === 'IN_PLAY' || match.status === 'PAUSED'
+            const isFinished = match.status === 'FINISHED'
+            const hasResult = (isFinished || isLive) && match.home_score !== null && match.away_score !== null
             const isSaving = saving === match.id
 
             let pointsEarned: number | null = null
-            if (hasResult && savedTip) {
+            if (isFinished && hasResult && savedTip) {
               pointsEarned = calcPoints(
                 match.home_score!, match.away_score!, match.winner_team,
                 savedTip.home_tip, savedTip.away_tip, savedTip.winner_tip,
@@ -480,12 +482,20 @@ export function MatchesPage() {
             return (
               <div key={match.id} className="bg-gray-900 rounded-xl p-4 border border-gray-800">
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-xs text-gray-500">
-                    {new Date(match.starts_at).toLocaleString('sv-SE', {
-                      weekday: 'short', day: 'numeric', month: 'short',
-                      hour: '2-digit', minute: '2-digit',
-                    })}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-gray-500">
+                      {new Date(match.starts_at).toLocaleString('sv-SE', {
+                        weekday: 'short', day: 'numeric', month: 'short',
+                        hour: '2-digit', minute: '2-digit',
+                      })}
+                    </span>
+                    {match.status === 'IN_PLAY' && (
+                      <span className="inline-block bg-green-500 text-white font-bold px-1.5 py-0.5 rounded text-[10px] leading-none animate-pulse">LIVE</span>
+                    )}
+                    {match.status === 'PAUSED' && (
+                      <span className="inline-block bg-yellow-500 text-black font-bold px-1.5 py-0.5 rounded text-[10px] leading-none">HT</span>
+                    )}
+                  </div>
                   {pointsEarned !== null && (
                     <span className={`text-xs font-bold px-2 py-0.5 rounded ${
                       pointsEarned === 30 ? 'bg-amber-600 text-amber-100' :
@@ -505,8 +515,13 @@ export function MatchesPage() {
                 <div className="flex items-center justify-center gap-3">
                   {hasResult && (
                     <div className="text-center">
-                      <div className="text-xs text-gray-500 mb-1">Resultat</div>
-                      <span className="text-lg font-bold text-white tabular-nums">
+                      <div className="text-xs mb-1">
+                        {isLive
+                          ? <span className={match.status === 'PAUSED' ? 'text-yellow-500' : 'text-green-500'}>{match.status === 'PAUSED' ? 'Halvtid' : 'Live'}</span>
+                          : <span className="text-gray-500">Resultat</span>
+                        }
+                      </div>
+                      <span className={`text-lg font-bold tabular-nums ${isLive ? (match.status === 'PAUSED' ? 'text-yellow-400' : 'text-green-400') : 'text-white'}`}>
                         {match.home_score}–{match.away_score}
                       </span>
                     </div>
