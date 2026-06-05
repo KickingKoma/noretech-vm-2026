@@ -1,9 +1,7 @@
 name: Sync match results
 
 on:
-  schedule:
-    - cron: '*/30 * * * *'  # var 30:e minut
-  workflow_dispatch:          # manuell körning
+  workflow_dispatch:  # manuell körning
 
 jobs:
   sync:
