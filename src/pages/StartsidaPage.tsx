@@ -196,7 +196,7 @@ export function StartsidaPage() {
         <Link to="/knockout" className="bg-gray-900 border border-gray-800 hover:border-cyan-700 rounded-xl p-4 transition-colors text-center">
           <div className="text-2xl mb-1">🏆</div>
           <div className="font-semibold text-white text-sm">Slutspel</div>
-          <div className="text-xs text-gray-500 mt-0.5">62 matcher</div>
+          <div className="text-xs text-gray-500 mt-0.5">{knockoutMatches.length} matcher</div>
         </Link>
       </div>
 
