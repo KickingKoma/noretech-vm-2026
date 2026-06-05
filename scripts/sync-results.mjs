@@ -86,7 +86,7 @@ async function main() {
 
   const { data: dbMatches, error } = await supabase
     .from('matches')
-    .select('id, home_team, away_team, home_score, away_score, winner_team, round, api_match_id')
+    .select('id, home_team, away_team, home_score, away_score, winner_team, status, round, api_match_id')
   if (error) throw new Error(`Supabase-fel: ${error.message}`)
 
   // Primär lookup: api_match_id
@@ -131,14 +131,17 @@ async function main() {
     if (!db.home_team && homeSv) updates.home_team = homeSv
     if (!db.away_team && awaySv) updates.away_team = awaySv
 
-    // Uppdatera resultat för avgjorda matcher
-    if (api.status === 'FINISHED') {
+    // Uppdatera resultat och status
+    const isLive = api.status === 'IN_PLAY' || api.status === 'PAUSED'
+    const isFinished = api.status === 'FINISHED'
+
+    if (isFinished || isLive) {
       const homeScore = api.score?.fullTime?.home ?? null
       const awayScore = api.score?.fullTime?.away ?? null
       const isKnockout = KNOCKOUT_STAGES.has(api.stage)
 
       let winnerTeam = null
-      if (isKnockout && api.score?.winner) {
+      if (isFinished && isKnockout && api.score?.winner) {
         const homeTeamSv = db.home_team || homeSv
         const awayTeamSv = db.away_team || awaySv
         winnerTeam = api.score.winner === 'HOME_TEAM' ? homeTeamSv
@@ -148,8 +151,11 @@ async function main() {
 
       if (db.home_score !== homeScore) updates.home_score = homeScore
       if (db.away_score !== awayScore) updates.away_score = awayScore
-      if (db.winner_team !== winnerTeam) updates.winner_team = winnerTeam
+      if (isFinished && db.winner_team !== winnerTeam) updates.winner_team = winnerTeam
     }
+
+    const newStatus = isFinished ? 'FINISHED' : (api.status === 'IN_PLAY' || api.status === 'PAUSED') ? api.status : 'SCHEDULED'
+    if (db.status !== newStatus) updates.status = newStatus
 
     if (Object.keys(updates).length === 0) {
       skipped++

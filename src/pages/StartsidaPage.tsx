@@ -35,6 +35,8 @@ export function StartsidaPage() {
       }
     }
     load()
+    const interval = setInterval(load, 5 * 60 * 1000)
+    return () => clearInterval(interval)
   }, [user])
 
   const groupMatches = allMatches.filter(m => GROUP_ROUNDS.includes(m.round))
@@ -141,17 +143,27 @@ export function StartsidaPage() {
           <div className="bg-gray-900 rounded-xl border border-gray-800 divide-y divide-gray-800">
             {displayMatches.map(m => {
               const tip = tips.get(m.id)
-              const hasResult = m.home_score !== null && m.away_score !== null
+              const hasResult = m.home_score !== null && m.away_score !== null && (m.status === 'FINISHED' || m.status === 'IN_PLAY' || m.status === 'PAUSED')
               const time = new Date(m.starts_at).toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' })
               return (
                 <div key={m.id} className="px-4 py-3 flex items-center gap-3 text-sm">
-                  <span className="text-gray-500 w-10 shrink-0 text-xs">{time}</span>
+                  <div className="w-10 shrink-0 text-xs text-center">
+                    {m.status === 'IN_PLAY' && (
+                      <span className="inline-block bg-green-500 text-white font-bold px-1 py-0.5 rounded text-[10px] leading-none animate-pulse">LIVE</span>
+                    )}
+                    {m.status === 'PAUSED' && (
+                      <span className="inline-block bg-yellow-500 text-black font-bold px-1 py-0.5 rounded text-[10px] leading-none">HT</span>
+                    )}
+                    {m.status !== 'IN_PLAY' && m.status !== 'PAUSED' && (
+                      <span className="text-gray-500">{time}</span>
+                    )}
+                  </div>
                   <div className="flex-1 flex items-center justify-between gap-2 min-w-0">
                     <span className="flex items-center gap-1.5 truncate text-gray-200">
                       <Flag name={m.home_team} />
                       {m.home_team}
                     </span>
-                    <span className="font-bold text-white shrink-0 tabular-nums">
+                    <span className={`font-bold shrink-0 tabular-nums ${m.status === 'IN_PLAY' ? 'text-green-400' : m.status === 'PAUSED' ? 'text-yellow-400' : 'text-white'}`}>
                       {hasResult ? `${m.home_score} – ${m.away_score}` : '–'}
                     </span>
                     <span className="flex items-center gap-1.5 truncate text-gray-200 justify-end">

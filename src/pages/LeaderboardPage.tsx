@@ -86,7 +86,7 @@ export function LeaderboardPage() {
       const [{ data: profiles }, { data: tips }, { data: matches }, { data: predictions }] = await Promise.all([
         supabase.from('profiles').select('*'),
         supabase.from('tips').select('*'),
-        supabase.from('matches').select('*').not('home_score', 'is', null),
+        supabase.from('matches').select('*').eq('status', 'FINISHED'),
         supabase.from('tournament_predictions').select('*'),
       ])
 

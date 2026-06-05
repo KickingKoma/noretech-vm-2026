@@ -11,6 +11,7 @@ export interface Match {
   home_score: number | null
   away_score: number | null
   winner_team: string | null
+  status: string
   created_at: string
 }
 
