@@ -75,11 +75,36 @@ Deno.serve(async (_req) => {
 async function sync() {
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
-  const res = await fetch('https://api.football-data.org/v4/competitions/WC/matches', {
-    headers: { 'X-Auth-Token': API_KEY! },
-  })
-  if (!res.ok) throw new Error(`API-fel ${res.status}: ${await res.text()}`)
-  const { matches: apiMatches } = await res.json()
+  const [allRes, finishedRes, liveRes] = await Promise.all([
+    fetch('https://api.football-data.org/v4/competitions/WC/matches', { headers: { 'X-Auth-Token': API_KEY! } }),
+    fetch('https://api.football-data.org/v4/competitions/WC/matches?status=FINISHED', { headers: { 'X-Auth-Token': API_KEY! } }),
+    fetch('https://api.football-data.org/v4/competitions/WC/matches?status=IN_PLAY', { headers: { 'X-Auth-Token': API_KEY! } }),
+  ])
+  if (!allRes.ok) throw new Error(`API-fel ${allRes.status}`)
+  const { matches: apiMatches } = await allRes.json()
+
+  // FINISHED-endpoint har tillförlitliga slutresultat (bulk-endpointen returnerar null)
+  const finishedScores = new Map<number, { home: number | null; away: number | null; winner: string | null }>()
+  if (finishedRes.ok) {
+    const { matches: finishedMatches } = await finishedRes.json()
+    for (const m of (finishedMatches ?? [])) {
+      finishedScores.set(m.id, {
+        home: m.score?.fullTime?.home ?? null,
+        away: m.score?.fullTime?.away ?? null,
+        winner: m.score?.winner ?? null,
+      })
+    }
+  }
+
+  // IN_PLAY-endpoint för live-poäng (logga score-objektet för felsökning)
+  const liveScores = new Map<number, Record<string, unknown>>()
+  if (liveRes.ok) {
+    const { matches: liveMatches } = await liveRes.json()
+    for (const m of (liveMatches ?? [])) {
+      liveScores.set(m.id, m.score)
+      console.log(`LIVE score obj [${m.id}] ${m.homeTeam?.name} – ${m.awayTeam?.name}:`, JSON.stringify(m.score))
+    }
+  }
 
   const { data: dbMatches, error } = await supabase
     .from('matches')
@@ -120,23 +145,36 @@ async function sync() {
     const isLive = api.status === 'IN_PLAY' || api.status === 'PAUSED'
     const isFinished = api.status === 'FINISHED'
 
-    if (isFinished || isLive) {
-      const homeScore = api.score?.fullTime?.home ?? null
-      const awayScore = api.score?.fullTime?.away ?? null
+    if (isFinished) {
+      const scored = finishedScores.get(api.id)
+      const homeScore = scored?.home ?? null
+      const awayScore = scored?.away ?? null
       const isKnockout = KNOCKOUT_STAGES.has(api.stage)
 
       let winnerTeam = null
-      if (isFinished && isKnockout && api.score?.winner) {
+      if (isKnockout && scored?.winner) {
         const homeTeamSv = db.home_team || homeSv
         const awayTeamSv = db.away_team || awaySv
-        winnerTeam = api.score.winner === 'HOME_TEAM' ? homeTeamSv
-                   : api.score.winner === 'AWAY_TEAM' ? awayTeamSv
+        winnerTeam = scored.winner === 'HOME_TEAM' ? homeTeamSv
+                   : scored.winner === 'AWAY_TEAM' ? awayTeamSv
                    : null
       }
 
       if (homeScore !== null && db.home_score !== homeScore) updates.home_score = homeScore
       if (awayScore !== null && db.away_score !== awayScore) updates.away_score = awayScore
-      if (isFinished && db.winner_team !== winnerTeam) updates.winner_team = winnerTeam
+      if (db.winner_team !== winnerTeam) updates.winner_team = winnerTeam
+    } else if (isLive) {
+      const liveScore = liveScores.get(api.id)
+      // Försök hämta live-poäng från fullTime, annars halvtidsresultat
+      const homeScore = (liveScore?.fullTime as Record<string, number> | null)?.home
+        ?? (liveScore?.halfTime as Record<string, number> | null)?.home
+        ?? null
+      const awayScore = (liveScore?.fullTime as Record<string, number> | null)?.away
+        ?? (liveScore?.halfTime as Record<string, number> | null)?.away
+        ?? null
+
+      if (homeScore !== null && db.home_score !== homeScore) updates.home_score = homeScore
+      if (awayScore !== null && db.away_score !== awayScore) updates.away_score = awayScore
     }
 
     const newStatus = isFinished ? 'FINISHED'

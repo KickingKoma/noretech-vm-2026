@@ -77,12 +77,47 @@ async function fetchAllMatches() {
   return matches ?? []
 }
 
+async function fetchFinishedMatches() {
+  const res = await fetch('https://api.football-data.org/v4/competitions/WC/matches?status=FINISHED', {
+    headers: { 'X-Auth-Token': API_KEY },
+  })
+  if (!res.ok) throw new Error(`API-fel FINISHED ${res.status}: ${await res.text()}`)
+  const { matches } = await res.json()
+  return matches ?? []
+}
+
+async function fetchLiveMatches() {
+  const res = await fetch('https://api.football-data.org/v4/competitions/WC/matches?status=IN_PLAY', {
+    headers: { 'X-Auth-Token': API_KEY },
+  })
+  if (!res.ok) return []
+  const { matches } = await res.json()
+  return matches ?? []
+}
+
 async function main() {
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
   console.log('Hämtar matcher från football-data.org...')
-  const apiMatches = await fetchAllMatches()
-  console.log(`${apiMatches.length} matcher i API:t`)
+  const [apiMatches, finishedMatches, liveMatches] = await Promise.all([
+    fetchAllMatches(),
+    fetchFinishedMatches(),
+    fetchLiveMatches(),
+  ])
+  console.log(`${apiMatches.length} matcher totalt, ${finishedMatches.length} avslutade, ${liveMatches.length} live`)
+
+  const finishedScores = new Map(
+    finishedMatches.map(m => [m.id, {
+      home: m.score?.fullTime?.home ?? null,
+      away: m.score?.fullTime?.away ?? null,
+      winner: m.score?.winner ?? null,
+    }])
+  )
+
+  const liveScores = new Map(liveMatches.map(m => {
+    console.log(`  LIVE score obj [${m.id}] ${m.homeTeam?.name} – ${m.awayTeam?.name}:`, JSON.stringify(m.score))
+    return [m.id, m.score]
+  }))
 
   const { data: dbMatches, error } = await supabase
     .from('matches')
@@ -135,23 +170,30 @@ async function main() {
     const isLive = api.status === 'IN_PLAY' || api.status === 'PAUSED'
     const isFinished = api.status === 'FINISHED'
 
-    if (isFinished || isLive) {
-      const homeScore = api.score?.fullTime?.home ?? null
-      const awayScore = api.score?.fullTime?.away ?? null
+    if (isFinished) {
+      const scored = finishedScores.get(api.id)
+      const homeScore = scored?.home ?? null
+      const awayScore = scored?.away ?? null
       const isKnockout = KNOCKOUT_STAGES.has(api.stage)
 
       let winnerTeam = null
-      if (isFinished && isKnockout && api.score?.winner) {
+      if (isKnockout && scored?.winner) {
         const homeTeamSv = db.home_team || homeSv
         const awayTeamSv = db.away_team || awaySv
-        winnerTeam = api.score.winner === 'HOME_TEAM' ? homeTeamSv
-                   : api.score.winner === 'AWAY_TEAM' ? awayTeamSv
+        winnerTeam = scored.winner === 'HOME_TEAM' ? homeTeamSv
+                   : scored.winner === 'AWAY_TEAM' ? awayTeamSv
                    : null
       }
 
       if (homeScore !== null && db.home_score !== homeScore) updates.home_score = homeScore
       if (awayScore !== null && db.away_score !== awayScore) updates.away_score = awayScore
-      if (isFinished && db.winner_team !== winnerTeam) updates.winner_team = winnerTeam
+      if (db.winner_team !== winnerTeam) updates.winner_team = winnerTeam
+    } else if (isLive) {
+      const liveScore = liveScores.get(api.id)
+      const homeScore = liveScore?.fullTime?.home ?? liveScore?.halfTime?.home ?? null
+      const awayScore = liveScore?.fullTime?.away ?? liveScore?.halfTime?.away ?? null
+      if (homeScore !== null && db.home_score !== homeScore) updates.home_score = homeScore
+      if (awayScore !== null && db.away_score !== awayScore) updates.away_score = awayScore
     }
 
     const newStatus = isFinished ? 'FINISHED' : (api.status === 'IN_PLAY' || api.status === 'PAUSED') ? api.status : 'SCHEDULED'
