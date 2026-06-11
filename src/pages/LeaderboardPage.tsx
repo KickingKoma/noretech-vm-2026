@@ -91,7 +91,7 @@ export function LeaderboardPage() {
 
       const finishedMatchIds = (matches ?? []).map((m: Match) => m.id)
       const { data: tips } = finishedMatchIds.length > 0
-        ? await supabase.from('tips').select('*').in('match_id', finishedMatchIds)
+        ? await supabase.from('tips').select('*').in('match_id', finishedMatchIds).limit(10000)
         : { data: [] }
 
       if (!profiles || !tips || !matches) {
