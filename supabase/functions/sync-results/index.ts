@@ -134,8 +134,8 @@ async function sync() {
                    : null
       }
 
-      if (db.home_score !== homeScore) updates.home_score = homeScore
-      if (db.away_score !== awayScore) updates.away_score = awayScore
+      if (homeScore !== null && db.home_score !== homeScore) updates.home_score = homeScore
+      if (awayScore !== null && db.away_score !== awayScore) updates.away_score = awayScore
       if (isFinished && db.winner_team !== winnerTeam) updates.winner_team = winnerTeam
     }
 
@@ -143,7 +143,7 @@ async function sync() {
       : api.status === 'IN_PLAY' ? 'IN_PLAY'
       : api.status === 'PAUSED' ? 'PAUSED'
       : 'SCHEDULED'
-    if (db.status !== newStatus) updates.status = newStatus
+    if (db.status !== newStatus && db.status !== 'FINISHED') updates.status = newStatus
 
     if (Object.keys(updates).length === 0) {
       skipped++

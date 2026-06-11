@@ -97,9 +97,10 @@ export function PlayerPage() {
       : (match.away_team ?? '?')
     const tip = tips.get(match.id)
     const hasResult = match.home_score !== null && match.away_score !== null
+    const isFinished = match.status === 'FINISHED'
 
     let pts: number | null = null
-    if (hasResult && tip) {
+    if (isFinished && hasResult && tip) {
       pts = calcPoints(
         match.home_score!, match.away_score!, match.winner_team,
         tip.home_tip, tip.away_tip, tip.winner_tip,
