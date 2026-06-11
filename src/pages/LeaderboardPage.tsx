@@ -83,12 +83,16 @@ export function LeaderboardPage() {
 
   useEffect(() => {
     async function load() {
-      const [{ data: profiles }, { data: tips }, { data: matches }, { data: predictions }] = await Promise.all([
+      const [{ data: profiles }, { data: matches }, { data: predictions }] = await Promise.all([
         supabase.from('profiles').select('*'),
-        supabase.from('tips').select('*'),
         supabase.from('matches').select('*').eq('status', 'FINISHED'),
         supabase.from('tournament_predictions').select('*'),
       ])
+
+      const finishedMatchIds = (matches ?? []).map((m: Match) => m.id)
+      const { data: tips } = finishedMatchIds.length > 0
+        ? await supabase.from('tips').select('*').in('match_id', finishedMatchIds)
+        : { data: [] }
 
       if (!profiles || !tips || !matches) {
         setLoading(false)
