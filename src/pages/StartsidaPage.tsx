@@ -36,7 +36,12 @@ export function StartsidaPage() {
     }
     load()
     const interval = setInterval(load, 5 * 60 * 1000)
-    return () => clearInterval(interval)
+    const onVisible = () => { if (document.visibilityState === 'visible') load() }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => {
+      clearInterval(interval)
+      document.removeEventListener('visibilitychange', onVisible)
+    }
   }, [user])
 
   const groupMatches = allMatches.filter(m => GROUP_ROUNDS.includes(m.round))
