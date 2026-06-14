@@ -75,10 +75,11 @@ Deno.serve(async (_req) => {
 async function sync() {
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
-  const [allRes, finishedRes, liveRes] = await Promise.all([
+  const [allRes, finishedRes, liveRes, pausedRes] = await Promise.all([
     fetch('https://api.football-data.org/v4/competitions/WC/matches', { headers: { 'X-Auth-Token': API_KEY! } }),
     fetch('https://api.football-data.org/v4/competitions/WC/matches?status=FINISHED', { headers: { 'X-Auth-Token': API_KEY! } }),
     fetch('https://api.football-data.org/v4/competitions/WC/matches?status=IN_PLAY', { headers: { 'X-Auth-Token': API_KEY! } }),
+    fetch('https://api.football-data.org/v4/competitions/WC/matches?status=PAUSED', { headers: { 'X-Auth-Token': API_KEY! } }),
   ])
   if (!allRes.ok) throw new Error(`API-fel ${allRes.status}`)
   const { matches: apiMatches } = await allRes.json()
@@ -97,12 +98,20 @@ async function sync() {
   }
 
   // IN_PLAY-endpoint för live-poäng (logga score-objektet för felsökning)
+  // Hämtar även PAUSED separat för att fånga halvtidsresultat
   const liveScores = new Map<number, Record<string, unknown>>()
   if (liveRes.ok) {
     const { matches: liveMatches } = await liveRes.json()
     for (const m of (liveMatches ?? [])) {
       liveScores.set(m.id, m.score)
       console.log(`LIVE score obj [${m.id}] ${m.homeTeam?.name} – ${m.awayTeam?.name}:`, JSON.stringify(m.score))
+    }
+  }
+  if (pausedRes.ok) {
+    const { matches: pausedMatches } = await pausedRes.json()
+    for (const m of (pausedMatches ?? [])) {
+      liveScores.set(m.id, m.score)
+      console.log(`PAUSED score obj [${m.id}] ${m.homeTeam?.name} – ${m.awayTeam?.name}:`, JSON.stringify(m.score))
     }
   }
 
