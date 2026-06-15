@@ -48,32 +48,28 @@ export function StartsidaPage() {
   const knockoutMatches = allMatches.filter(m => KNOCKOUT_ROUNDS.includes(m.round))
 
   const now = new Date()
-  const toDateStr = (d: Date) =>
-    `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`
-  const todayStr = toDateStr(now)
 
-  const todayMatches = allMatches
-    .filter(m => toDateStr(new Date(m.starts_at)) === todayStr)
+  const recentFinished = allMatches
+    .filter(m => m.status === 'FINISHED')
+    .sort((a, b) => new Date(b.starts_at).getTime() - new Date(a.starts_at).getTime())
+    .slice(0, 3)
+    .reverse()
+
+  const liveMatches = allMatches
+    .filter(m => m.status === 'IN_PLAY' || m.status === 'PAUSED')
     .sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime())
+    .slice(0, 1)
 
-  const nextMatches = todayMatches.length === 0
-    ? (() => {
-        const future = allMatches
-          .filter(m => new Date(m.starts_at) > now)
-          .sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime())
-        if (future.length === 0) return []
-        const nextDateStr = toDateStr(new Date(future[0].starts_at))
-        return future.filter(m => toDateStr(new Date(m.starts_at)) === nextDateStr)
-      })()
-    : []
+  const upcomingMatches = allMatches
+    .filter(m => m.status === 'SCHEDULED' && new Date(m.starts_at) > now)
+    .sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime())
+    .slice(0, 3)
 
-  const displayMatches = todayMatches.length > 0 ? todayMatches : nextMatches
-  const isToday = todayMatches.length > 0
-  const displayHeading = isToday
-    ? 'Dagens matcher'
-    : displayMatches.length > 0
-      ? `Nästa matchdag · ${new Date(displayMatches[0].starts_at).toLocaleDateString('sv-SE', { day: 'numeric', month: 'short' })}`
-      : ''
+  const displayMatches = [...recentFinished, ...liveMatches, ...upcomingMatches]
+
+  const displayHeading = liveMatches.length > 0
+    ? 'Pågående & kommande matcher'
+    : 'Senaste & kommande matcher'
   const groupTipped = groupMatches.filter(m => tips.has(m.id)).length
   const knockoutTipped = knockoutMatches.filter(m => tips.has(m.id)).length
 
@@ -163,12 +159,12 @@ export function StartsidaPage() {
                       <span className="text-gray-500">{time}</span>
                     )}
                   </div>
-                  <div className="flex-1 flex items-center justify-between gap-2 min-w-0">
+                  <div className="flex-1 grid grid-cols-[1fr_auto_1fr] items-center gap-x-2 min-w-0">
                     <span className="flex items-center gap-1.5 truncate text-gray-200">
                       <Flag name={m.home_team} />
                       {m.home_team}
                     </span>
-                    <span className={`font-bold shrink-0 tabular-nums ${m.status === 'IN_PLAY' ? 'text-green-400' : m.status === 'PAUSED' ? 'text-yellow-400' : 'text-white'}`}>
+                    <span className={`font-bold tabular-nums text-center ${m.status === 'IN_PLAY' ? 'text-green-400' : m.status === 'PAUSED' ? 'text-yellow-400' : 'text-white'}`}>
                       {hasResult ? `${m.home_score} – ${m.away_score}` : '–'}
                     </span>
                     <span className="flex items-center gap-1.5 truncate text-gray-200 justify-end">
@@ -176,11 +172,11 @@ export function StartsidaPage() {
                       <Flag name={m.away_team} />
                     </span>
                   </div>
-                  <div className="shrink-0 text-right">
+                  <div className="w-10 shrink-0 text-right">
                     {tip ? (
                       <span className="text-xs text-cyan-400">{tip.home_tip}–{tip.away_tip}</span>
                     ) : (
-                      <span className="text-xs text-gray-600">ej tippat</span>
+                      <span className="text-xs text-gray-600">–</span>
                     )}
                   </div>
                 </div>
