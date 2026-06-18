@@ -4,8 +4,16 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { useDeadlines } from '../hooks/useDeadlines'
 import { GROUP_ROUNDS, KNOCKOUT_ROUNDS } from '../types'
-import type { Match, UserTip } from '../types'
+import type { Match, UserTip, Profile } from '../types'
 import { Flag } from '../components/Flag'
+
+function tipColor(t: UserTip, match: Match): string {
+  if (match.status !== 'FINISHED' || match.home_score === null || match.away_score === null) return ''
+  if (t.home_tip === match.home_score && t.away_tip === match.away_score) return 'text-amber-400 font-medium'
+  const tipOut = Math.sign(t.home_tip - t.away_tip)
+  const matchOut = Math.sign(match.home_score - match.away_score)
+  return tipOut === matchOut ? 'text-cyan-400' : 'text-red-400'
+}
 
 function formatDeadline(d: Date): string {
   return d.toLocaleString('sv-SE', {
@@ -19,6 +27,50 @@ export function StartsidaPage() {
   const [tips, setTips] = useState<Map<string, UserTip>>(new Map())
 
   const { groupDeadline, groupLocked, nextKnockoutDeadline, allKnockoutLocked } = useDeadlines(allMatches)
+
+  const [expandedMatchId, setExpandedMatchId] = useState<string | null>(null)
+  const [expandedTips, setExpandedTips] = useState<{ userId: string; displayName: string; tip: UserTip | null }[]>([])
+  const [expandLoading, setExpandLoading] = useState(false)
+
+  async function toggleMatch(match: Match) {
+    if (expandedMatchId === match.id) {
+      setExpandedMatchId(null)
+      return
+    }
+    setExpandedMatchId(match.id)
+    setExpandedTips([])
+    setExpandLoading(true)
+    const [{ data: tipData }, { data: profileData }] = await Promise.all([
+      supabase.from('tips').select('*').eq('match_id', match.id),
+      supabase.from('profiles').select('id, display_name'),
+    ])
+    if (profileData) {
+      const tipMap = new Map<string, UserTip>()
+      ;(tipData ?? []).forEach((t: UserTip) => tipMap.set(t.user_id, t))
+      const combined = (profileData as Profile[]).map(p => ({
+        userId: p.id,
+        displayName: p.display_name,
+        tip: tipMap.get(p.id) ?? null,
+      }))
+      function outcome(t: UserTip) {
+        if (t.home_tip > t.away_tip) return 0
+        if (t.home_tip === t.away_tip) return 1
+        return 2
+      }
+      combined.sort((a, b) => {
+        if (!!a.tip !== !!b.tip) return a.tip ? -1 : 1
+        if (a.tip && b.tip) {
+          const diff = outcome(a.tip) - outcome(b.tip)
+          if (diff !== 0) return diff
+          const goals = (b.tip.home_tip + b.tip.away_tip) - (a.tip.home_tip + a.tip.away_tip)
+          if (goals !== 0) return goals
+        }
+        return a.displayName.localeCompare(b.displayName, 'sv')
+      })
+      setExpandedTips(combined)
+    }
+    setExpandLoading(false)
+  }
 
   useEffect(() => {
     if (!user) return
@@ -146,39 +198,79 @@ export function StartsidaPage() {
               const tip = tips.get(m.id)
               const hasResult = m.home_score !== null && m.away_score !== null && (m.status === 'FINISHED' || m.status === 'IN_PLAY' || m.status === 'PAUSED')
               const time = new Date(m.starts_at).toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' })
+              const isGroup = GROUP_ROUNDS.includes(m.round)
+              const isExpanded = expandedMatchId === m.id
               return (
-                <div key={m.id} className="px-4 py-3 flex items-center gap-3 text-sm">
-                  <div className="w-10 shrink-0 text-xs text-center">
-                    {m.status === 'IN_PLAY' && (
-                      <span className="inline-block bg-green-500 text-white font-bold px-1 py-0.5 rounded text-[10px] leading-none animate-pulse">LIVE</span>
-                    )}
-                    {m.status === 'PAUSED' && (
-                      <span className="inline-block bg-yellow-500 text-black font-bold px-1 py-0.5 rounded text-[10px] leading-none">HT</span>
-                    )}
-                    {m.status !== 'IN_PLAY' && m.status !== 'PAUSED' && (
-                      <span className="text-gray-500">{time}</span>
-                    )}
+                <div key={m.id}>
+                  <div
+                    onClick={isGroup ? () => toggleMatch(m) : undefined}
+                    className={`px-4 py-3 flex items-center gap-3 text-sm${isGroup ? ' cursor-pointer hover:bg-gray-800/60 transition-colors select-none' : ''}`}
+                  >
+                    <div className="w-10 shrink-0 text-xs text-center">
+                      {m.status === 'IN_PLAY' && (
+                        <span className="inline-block bg-green-500 text-white font-bold px-1 py-0.5 rounded text-[10px] leading-none animate-pulse">LIVE</span>
+                      )}
+                      {m.status === 'PAUSED' && (
+                        <span className="inline-block bg-yellow-500 text-black font-bold px-1 py-0.5 rounded text-[10px] leading-none">HT</span>
+                      )}
+                      {m.status !== 'IN_PLAY' && m.status !== 'PAUSED' && (
+                        <span className="text-gray-500">{time}</span>
+                      )}
+                    </div>
+                    <div className="flex-1 grid grid-cols-[1fr_auto_1fr] items-center gap-x-2 min-w-0">
+                      <span className="flex items-center gap-1.5 truncate text-gray-200">
+                        <Flag name={m.home_team} />
+                        {m.home_team}
+                      </span>
+                      <span className={`font-bold tabular-nums text-center ${m.status === 'IN_PLAY' ? 'text-green-400' : m.status === 'PAUSED' ? 'text-yellow-400' : 'text-white'}`}>
+                        {hasResult ? `${m.home_score} – ${m.away_score}` : '–'}
+                      </span>
+                      <span className="flex items-center gap-1.5 truncate text-gray-200 justify-end">
+                        {m.away_team}
+                        <Flag name={m.away_team} />
+                      </span>
+                    </div>
+                    <div className="w-10 shrink-0 flex items-center justify-end gap-1.5">
+                      {tip ? (
+                        <span className="text-xs text-cyan-400">{tip.home_tip}–{tip.away_tip}</span>
+                      ) : (
+                        <span className="text-xs text-gray-600">–</span>
+                      )}
+                      {isGroup && (
+                        <svg className={`w-3 h-3 text-gray-500 shrink-0 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex-1 grid grid-cols-[1fr_auto_1fr] items-center gap-x-2 min-w-0">
-                    <span className="flex items-center gap-1.5 truncate text-gray-200">
-                      <Flag name={m.home_team} />
-                      {m.home_team}
-                    </span>
-                    <span className={`font-bold tabular-nums text-center ${m.status === 'IN_PLAY' ? 'text-green-400' : m.status === 'PAUSED' ? 'text-yellow-400' : 'text-white'}`}>
-                      {hasResult ? `${m.home_score} – ${m.away_score}` : '–'}
-                    </span>
-                    <span className="flex items-center gap-1.5 truncate text-gray-200 justify-end">
-                      {m.away_team}
-                      <Flag name={m.away_team} />
-                    </span>
-                  </div>
-                  <div className="w-10 shrink-0 text-right">
-                    {tip ? (
-                      <span className="text-xs text-cyan-400">{tip.home_tip}–{tip.away_tip}</span>
-                    ) : (
-                      <span className="text-xs text-gray-600">–</span>
-                    )}
-                  </div>
+                  {isGroup && (
+                    <div className={`grid transition-all duration-200 ${isExpanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+                      <div className="overflow-hidden">
+                        <div className="px-4 pb-3 pt-2 border-t border-gray-800 bg-gray-800/30">
+                          {expandLoading ? (
+                            <p className="text-xs text-gray-500 py-1">Laddar...</p>
+                          ) : (
+                            <div className="space-y-1.5">
+                              {expandedTips.map(({ userId, displayName, tip: t }) => {
+                                const color = t ? (tipColor(t, m) || (userId === user!.id ? 'text-cyan-300 font-medium' : 'text-gray-400')) : 'text-gray-600'
+                                return (
+                                  <div key={userId} className="flex items-center justify-between text-xs">
+                                    <span className={t ? 'text-gray-300' : 'text-gray-600'}>
+                                      {displayName}
+                                      {userId === user!.id && <span className="text-gray-600 ml-1">(du)</span>}
+                                    </span>
+                                    <span className={`tabular-nums ${color}`}>
+                                      {t ? `${t.home_tip} – ${t.away_tip}` : 'Ej tippat'}
+                                    </span>
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )
             })}
