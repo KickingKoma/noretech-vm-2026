@@ -62,8 +62,8 @@ export function StartsidaPage() {
         if (a.tip && b.tip) {
           const diff = outcome(a.tip) - outcome(b.tip)
           if (diff !== 0) return diff
-          const goals = (b.tip.home_tip + b.tip.away_tip) - (a.tip.home_tip + a.tip.away_tip)
-          if (goals !== 0) return goals
+          if (b.tip.home_tip !== a.tip.home_tip) return b.tip.home_tip - a.tip.home_tip
+          if (b.tip.away_tip !== a.tip.away_tip) return b.tip.away_tip - a.tip.away_tip
         }
         return a.displayName.localeCompare(b.displayName, 'sv')
       })
