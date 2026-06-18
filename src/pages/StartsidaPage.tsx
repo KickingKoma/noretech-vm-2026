@@ -8,6 +8,10 @@ import type { Match, UserTip, Profile } from '../types'
 import { Flag } from '../components/Flag'
 
 function tipColor(t: UserTip, match: Match): string {
+  if (KNOCKOUT_ROUNDS.includes(match.round)) {
+    if (!match.winner_team) return ''
+    return t.winner_tip === match.winner_team ? 'text-amber-400 font-medium' : 'text-red-400'
+  }
   if (match.status !== 'FINISHED' || match.home_score === null || match.away_score === null) return ''
   if (t.home_tip === match.home_score && t.away_tip === match.away_score) return 'text-amber-400 font-medium'
   const tipOut = Math.sign(t.home_tip - t.away_tip)
@@ -60,6 +64,9 @@ export function StartsidaPage() {
       combined.sort((a, b) => {
         if (!!a.tip !== !!b.tip) return a.tip ? -1 : 1
         if (a.tip && b.tip) {
+          if (a.tip.winner_tip !== null || b.tip.winner_tip !== null) {
+            return (a.tip.winner_tip ?? '').localeCompare(b.tip.winner_tip ?? '', 'sv')
+          }
           const diff = outcome(a.tip) - outcome(b.tip)
           if (diff !== 0) return diff
           if (b.tip.home_tip !== a.tip.home_tip) return b.tip.home_tip - a.tip.home_tip
@@ -199,12 +206,15 @@ export function StartsidaPage() {
               const hasResult = m.home_score !== null && m.away_score !== null && (m.status === 'FINISHED' || m.status === 'IN_PLAY' || m.status === 'PAUSED')
               const time = new Date(m.starts_at).toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' })
               const isGroup = GROUP_ROUNDS.includes(m.round)
+              const isVisible = isGroup
+                ? groupLocked
+                : allMatches.some(m2 => m2.round === m.round && m2.status !== 'SCHEDULED')
               const isExpanded = expandedMatchId === m.id
               return (
                 <div key={m.id}>
                   <div
-                    onClick={isGroup ? () => toggleMatch(m) : undefined}
-                    className={`px-4 py-3 flex items-center gap-3 text-sm${isGroup ? ' cursor-pointer hover:bg-gray-800/60 transition-colors select-none' : ''}`}
+                    onClick={isVisible ? () => toggleMatch(m) : undefined}
+                    className={`px-4 py-3 flex items-center gap-3 text-sm${isVisible ? ' cursor-pointer hover:bg-gray-800/60 transition-colors select-none' : ''}`}
                   >
                     <div className="w-10 shrink-0 text-xs text-center">
                       {m.status === 'IN_PLAY' && (
@@ -232,18 +242,20 @@ export function StartsidaPage() {
                     </div>
                     <div className="w-10 shrink-0 flex items-center justify-end gap-1.5">
                       {tip ? (
-                        <span className="text-xs text-cyan-400">{tip.home_tip}–{tip.away_tip}</span>
+                        <span className="text-xs text-cyan-400">
+                          {isGroup ? `${tip.home_tip}–${tip.away_tip}` : tip.winner_tip}
+                        </span>
                       ) : (
                         <span className="text-xs text-gray-600">–</span>
                       )}
-                      {isGroup && (
+                      {isVisible && (
                         <svg className={`w-3 h-3 text-gray-500 shrink-0 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                         </svg>
                       )}
                     </div>
                   </div>
-                  {isGroup && (
+                  {isVisible && (
                     <div className={`grid transition-all duration-200 ${isExpanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                       <div className="overflow-hidden">
                         <div className="px-4 pb-3 pt-2 border-t border-gray-800 bg-gray-800/30">
@@ -260,7 +272,7 @@ export function StartsidaPage() {
                                       {userId === user!.id && <span className="text-gray-600 ml-1">(du)</span>}
                                     </span>
                                     <span className={`tabular-nums ${color}`}>
-                                      {t ? `${t.home_tip} – ${t.away_tip}` : 'Ej tippat'}
+                                      {t ? (isGroup ? `${t.home_tip} – ${t.away_tip}` : (t.winner_tip ?? '–')) : 'Ej tippat'}
                                     </span>
                                   </div>
                                 )
