@@ -467,8 +467,12 @@ export function MatchesPage() {
         {activeGroupMatches.map(match => {
             const savedTip = tips.get(match.id)
             const draft = getDraft(match.id)
+            const now = new Date()
             const isLive = match.status === 'IN_PLAY' || match.status === 'PAUSED'
             const isFinished = match.status === 'FINISHED'
+            const justStarted = match.status === 'SCHEDULED'
+              && new Date(match.starts_at) <= now
+              && new Date(match.starts_at) > new Date(now.getTime() - 90 * 60 * 1000)
             const hasResult = (isFinished || isLive) && match.home_score !== null && match.away_score !== null
             const isSaving = saving === match.id
 
@@ -501,6 +505,9 @@ export function MatchesPage() {
                     )}
                     {match.status === 'PAUSED' && (
                       <span className="inline-block bg-yellow-500 text-black font-bold px-1.5 py-0.5 rounded text-[10px] leading-none">HT</span>
+                    )}
+                    {justStarted && (
+                      <span className="inline-block bg-gray-600 text-gray-300 font-bold px-1.5 py-0.5 rounded text-[10px] leading-none">Pågår?</span>
                     )}
                   </div>
                   {pointsEarned !== null && (

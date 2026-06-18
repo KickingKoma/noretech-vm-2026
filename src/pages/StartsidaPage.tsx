@@ -120,7 +120,7 @@ export function StartsidaPage() {
     .slice(0, 1)
 
   const upcomingMatches = allMatches
-    .filter(m => m.status === 'SCHEDULED' && new Date(m.starts_at) > now)
+    .filter(m => m.status === 'SCHEDULED' && new Date(m.starts_at) > new Date(now.getTime() - 90 * 60 * 1000))
     .sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime())
     .slice(0, 3)
 
