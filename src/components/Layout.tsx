@@ -37,8 +37,8 @@ export function Layout() {
       {/* Hero-banner */}
       <div className="relative w-full h-56 overflow-hidden mb-[-3rem]">
         <img
-          src={`${import.meta.env.BASE_URL}Glad-midsommar.jpg`}
-          alt="Glad midsommar!"
+          src={`${import.meta.env.BASE_URL}mascots.jpg`}
+          alt="VM 2026"
           className="w-full h-full object-cover"
           style={{ objectPosition: 'center 15%' }}
         />
