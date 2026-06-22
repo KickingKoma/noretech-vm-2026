@@ -14,6 +14,7 @@ interface Standing {
   v: number
   o: number
   f: number
+  gf: number
   diff: number
   pts: number
 }
@@ -25,9 +26,9 @@ function computeStandings(
   const map = new Map<string, Standing>()
   for (const m of matches) {
     if (m.home_team && !map.has(m.home_team))
-      map.set(m.home_team, { team: m.home_team, s: 0, v: 0, o: 0, f: 0, diff: 0, pts: 0 })
+      map.set(m.home_team, { team: m.home_team, s: 0, v: 0, o: 0, f: 0, gf: 0, diff: 0, pts: 0 })
     if (m.away_team && !map.has(m.away_team))
-      map.set(m.away_team, { team: m.away_team, s: 0, v: 0, o: 0, f: 0, diff: 0, pts: 0 })
+      map.set(m.away_team, { team: m.away_team, s: 0, v: 0, o: 0, f: 0, gf: 0, diff: 0, pts: 0 })
   }
   for (const match of matches) {
     if (!match.home_team || !match.away_team) continue
@@ -36,6 +37,7 @@ function computeStandings(
     const home = map.get(match.home_team)!
     const away = map.get(match.away_team)!
     home.s++; away.s++
+    home.gf += score.home; away.gf += score.away
     home.diff += score.home - score.away
     away.diff += score.away - score.home
     if (score.home > score.away) {
@@ -47,7 +49,7 @@ function computeStandings(
     }
   }
   return [...map.values()].sort((a, b) =>
-    b.pts - a.pts || b.diff - a.diff || a.team.localeCompare(b.team),
+    b.pts - a.pts || b.diff - a.diff || b.gf - a.gf || b.v - a.v,
   )
 }
 

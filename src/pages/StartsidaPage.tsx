@@ -140,7 +140,7 @@ export function StartsidaPage() {
         <div className="space-y-3">
           <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wide">Deadlines</h2>
 
-          {groupMatches.length > 0 && (
+          {groupMatches.length > 0 && !groupLocked && (
             <div className={`rounded-xl p-4 border ${groupLocked ? 'border-red-900 text-red-300' : 'border-cyan-900 text-cyan-300'} bg-gray-900`}>
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <div>
@@ -242,7 +242,7 @@ export function StartsidaPage() {
                     </div>
                     <div className="w-10 shrink-0 flex items-center justify-end gap-1.5">
                       {tip ? (
-                        <span className="text-xs text-cyan-400">
+                        <span className={`text-xs ${tipColor(tip, m) || 'text-white'}`}>
                           {isGroup ? `${tip.home_tip}–${tip.away_tip}` : tip.winner_tip}
                         </span>
                       ) : (
@@ -264,7 +264,7 @@ export function StartsidaPage() {
                           ) : (
                             <div className="space-y-1.5">
                               {expandedTips.map(({ userId, displayName, tip: t }) => {
-                                const color = t ? (tipColor(t, m) || (userId === user!.id ? 'text-cyan-300 font-medium' : 'text-gray-400')) : 'text-gray-600'
+                                const color = t ? (tipColor(t, m) || (userId === user!.id ? 'text-white font-medium' : 'text-gray-400')) : 'text-gray-600'
                                 return (
                                   <div key={userId} className="flex items-center justify-between text-xs">
                                     <span className={t ? 'text-gray-300' : 'text-gray-600'}>
