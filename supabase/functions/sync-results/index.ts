@@ -151,7 +151,7 @@ async function sync() {
     if (!db.home_team && homeSv) updates.home_team = homeSv
     if (!db.away_team && awaySv) updates.away_team = awaySv
 
-    const isLive = api.status === 'IN_PLAY' || api.status === 'PAUSED'
+    const isLive = api.status === 'IN_PLAY' || api.status === 'PAUSED' || api.status === 'LIVE'
     const isFinished = api.status === 'FINISHED'
 
     if (isFinished) {
@@ -173,8 +173,9 @@ async function sync() {
       if (awayScore !== null && db.away_score !== awayScore) updates.away_score = awayScore
       if (db.winner_team !== winnerTeam) updates.winner_team = winnerTeam
     } else if (isLive) {
-      const liveScore = liveScores.get(api.id)
-      // Försök hämta live-poäng från fullTime, annars halvtidsresultat
+      // Prioritera dedikerade IN_PLAY/PAUSED-endpoints; fall tillbaka på bulk-endpointens score
+      // när API returnerar status "LIVE" som inte matchas av ?status=IN_PLAY-filtret
+      const liveScore = liveScores.get(api.id) ?? api.score
       const homeScore = (liveScore?.fullTime as Record<string, number> | null)?.home
         ?? (liveScore?.halfTime as Record<string, number> | null)?.home
         ?? null
@@ -187,7 +188,7 @@ async function sync() {
     }
 
     const newStatus = isFinished ? 'FINISHED'
-      : api.status === 'IN_PLAY' ? 'IN_PLAY'
+      : (api.status === 'IN_PLAY' || api.status === 'LIVE') ? 'IN_PLAY'
       : api.status === 'PAUSED' ? 'PAUSED'
       : 'SCHEDULED'
     if (db.status !== newStatus && db.status !== 'FINISHED') updates.status = newStatus
