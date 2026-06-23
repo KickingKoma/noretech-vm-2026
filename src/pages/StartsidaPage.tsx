@@ -242,7 +242,7 @@ export function StartsidaPage() {
                     </div>
                     <div className="w-10 shrink-0 flex items-center justify-end gap-1.5">
                       {tip ? (
-                        <span className={`text-xs ${tipColor(tip, m) || 'text-white'}`}>
+                        <span className={`text-xs whitespace-nowrap ${tipColor(tip, m) || 'text-white'}`}>
                           {isGroup ? `${tip.home_tip}–${tip.away_tip}` : tip.winner_tip}
                         </span>
                       ) : (
