@@ -202,12 +202,12 @@ export function KnockoutPage() {
                     </div>
 
                     {/* Lag */}
-                    <div className="flex justify-between mb-3">
-                      <span className={`font-medium flex items-center gap-1.5 ${homeTeam === 'TBD' || homeTeam === '?' ? 'text-gray-500 italic' : 'text-white'}`}>
+                    <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-x-2 mb-3">
+                      <span className={`font-medium flex items-center gap-1.5 truncate ${homeTeam === 'TBD' || homeTeam === '?' ? 'text-gray-500 italic' : 'text-white'}`}>
                         <Flag name={homeTeam} />{homeTeam}
                       </span>
-                      <span className="text-gray-600 self-center text-sm">vs</span>
-                      <span className={`font-medium flex items-center gap-1.5 ${awayTeam === 'TBD' || awayTeam === '?' ? 'text-gray-500 italic' : 'text-white'}`}>
+                      <span className="text-gray-600 text-sm text-center">vs</span>
+                      <span className={`font-medium flex items-center gap-1.5 truncate justify-end ${awayTeam === 'TBD' || awayTeam === '?' ? 'text-gray-500 italic' : 'text-white'}`}>
                         {awayTeam}<Flag name={awayTeam} />
                       </span>
                     </div>
