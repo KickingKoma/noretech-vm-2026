@@ -121,7 +121,6 @@ export function StartsidaPage() {
   const liveMatches = allMatches
     .filter(m => m.status === 'IN_PLAY' || m.status === 'PAUSED')
     .sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime())
-    .slice(0, 1)
 
   const upcomingMatches = allMatches
     .filter(m => m.status === 'SCHEDULED' && new Date(m.starts_at) > new Date(now.getTime() - 130 * 60 * 1000))
