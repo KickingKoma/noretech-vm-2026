@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { useDeadlines } from '../hooks/useDeadlines'
-import { GROUP_ROUNDS, KNOCKOUT_ROUNDS } from '../types'
+import { GROUP_ROUNDS, KNOCKOUT_ROUNDS, ROUND_LABEL } from '../types'
 import type { Match, UserTip, Profile } from '../types'
 import { Flag } from '../components/Flag'
 
@@ -108,6 +108,10 @@ export function StartsidaPage() {
 
   const now = new Date()
 
+  const activeKnockoutRound = KNOCKOUT_ROUNDS.find(r =>
+    allMatches.some(m => m.round === r && m.status !== 'SCHEDULED')
+  )
+
   const recentFinished = allMatches
     .filter(m => m.status === 'FINISHED')
     .sort((a, b) => new Date(b.starts_at).getTime() - new Date(a.starts_at).getTime())
@@ -124,11 +128,17 @@ export function StartsidaPage() {
     .sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime())
     .slice(0, 3)
 
-  const displayMatches = [...recentFinished, ...liveMatches, ...upcomingMatches]
+  const displayMatches = activeKnockoutRound
+    ? allMatches
+        .filter(m => m.round === activeKnockoutRound)
+        .sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime())
+    : [...recentFinished, ...liveMatches, ...upcomingMatches]
 
-  const displayHeading = liveMatches.length > 0
-    ? 'Pågående & kommande matcher'
-    : 'Senaste & kommande matcher'
+  const displayHeading = activeKnockoutRound
+    ? ROUND_LABEL[activeKnockoutRound]
+    : liveMatches.length > 0
+      ? 'Pågående & kommande matcher'
+      : 'Senaste & kommande matcher'
   const groupTipped = groupMatches.filter(m => tips.has(m.id)).length
   const knockoutTipped = knockoutMatches.filter(m => tips.has(m.id)).length
 
