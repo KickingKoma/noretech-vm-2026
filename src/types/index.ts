@@ -81,29 +81,14 @@ export function getEffectiveTeam(
   match: Match,
   side: 'home' | 'away',
   matchMap: Map<string, Match>,
-  tipMap: Map<string, UserTip>,
 ): string {
   const directTeam = side === 'home' ? match.home_team : match.away_team
   if (directTeam) return directTeam
 
   const sourceId = side === 'home' ? match.home_source_match_id : match.away_source_match_id
-  const isWinner = side === 'home' ? match.home_source_is_winner : match.away_source_is_winner
-
   if (!sourceId) return 'TBD'
 
-  const sourceTip = tipMap.get(sourceId)
-  if (!sourceTip?.winner_tip) {
-    const sourceMatch = matchMap.get(sourceId)
-    if (sourceMatch && !sourceMatch.home_team && !sourceMatch.away_team) return 'TBD'
-    return '?'
-  }
-
-  if (isWinner) return sourceTip.winner_tip
-
-  // Loser (for 3rd place match)
   const sourceMatch = matchMap.get(sourceId)
-  if (!sourceMatch) return '?'
-  const sourceHome = getEffectiveTeam(sourceMatch, 'home', matchMap, tipMap)
-  const sourceAway = getEffectiveTeam(sourceMatch, 'away', matchMap, tipMap)
-  return sourceTip.winner_tip === sourceHome ? sourceAway : sourceHome
+  if (!sourceMatch || (!sourceMatch.home_team && !sourceMatch.away_team)) return 'TBD'
+  return '?'
 }

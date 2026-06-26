@@ -90,10 +90,10 @@ export function PlayerPage() {
 
   function renderMatch(match: Match, isKnockout: boolean) {
     const homeTeam = isKnockout
-      ? getEffectiveTeam(match, 'home', matchMap, tips)
+      ? getEffectiveTeam(match, 'home', matchMap)
       : (match.home_team ?? '?')
     const awayTeam = isKnockout
-      ? getEffectiveTeam(match, 'away', matchMap, tips)
+      ? getEffectiveTeam(match, 'away', matchMap)
       : (match.away_team ?? '?')
     const tip = tips.get(match.id)
     const hasResult = match.home_score !== null && match.away_score !== null

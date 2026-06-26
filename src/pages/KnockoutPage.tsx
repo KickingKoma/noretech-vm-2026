@@ -147,8 +147,8 @@ export function KnockoutPage() {
             </div>
             <div className="space-y-3">
               {roundMatches.map(match => {
-                const homeTeam = getEffectiveTeam(match, 'home', matchMap, tips)
-                const awayTeam = getEffectiveTeam(match, 'away', matchMap, tips)
+                const homeTeam = getEffectiveTeam(match, 'home', matchMap)
+                const awayTeam = getEffectiveTeam(match, 'away', matchMap)
                 const isTBD = homeTeam === 'TBD' || awayTeam === 'TBD'
                 const needsTip = homeTeam === '?' || awayTeam === '?'
                 const teamsKnown = !isTBD && !needsTip
