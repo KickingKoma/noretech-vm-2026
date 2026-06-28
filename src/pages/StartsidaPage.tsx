@@ -213,7 +213,7 @@ export function StartsidaPage() {
             {displayMatches.map(m => {
               const tip = tips.get(m.id)
               const hasResult = m.home_score !== null && m.away_score !== null && (m.status === 'FINISHED' || m.status === 'IN_PLAY' || m.status === 'PAUSED')
-              const time = new Date(m.starts_at).toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' })
+              const time = new Date(m.starts_at).toLocaleString('sv-SE', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
               const isGroup = GROUP_ROUNDS.includes(m.round)
               const isVisible = isGroup
                 ? groupLocked
@@ -251,9 +251,20 @@ export function StartsidaPage() {
                     </div>
                     <div className="w-10 shrink-0 flex items-center justify-end gap-1.5">
                       {tip ? (
-                        <span className={`text-xs whitespace-nowrap ${tipColor(tip, m) || 'text-white'}`}>
-                          {isGroup ? `${tip.home_tip}–${tip.away_tip}` : tip.winner_tip}
-                        </span>
+                        isGroup ? (
+                          <span className={`text-xs whitespace-nowrap ${tipColor(tip, m) || 'text-white'}`}>
+                            {tip.home_tip}–{tip.away_tip}
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-0.5">
+                            <Flag name={tip.winner_tip ?? ''} />
+                            {m.winner_team && (
+                              <span className={`text-[10px] font-bold ${tip.winner_tip === m.winner_team ? 'text-amber-400' : 'text-red-400'}`}>
+                                {tip.winner_tip === m.winner_team ? '✓' : '✗'}
+                              </span>
+                            )}
+                          </span>
+                        )
                       ) : (
                         <span className="text-xs text-gray-600">–</span>
                       )}
