@@ -13,6 +13,7 @@ interface Entry {
   points: number
   exact: number
   outcome: number
+  finals: number
   tipped: number
   top3: number
   trend: Trend
@@ -49,7 +50,7 @@ function buildPositionMap(
       )
       points += p
       if (!isKnockout && p === 30) exact++
-      else if (p > 0) outcome++
+      else if (!isKnockout && p > 0) outcome++
     }
 
     const pred = predictions?.find(p => p.user_id === profile.id)
@@ -117,7 +118,7 @@ export function LeaderboardPage() {
 
       const result: Entry[] = profiles.map((profile: Profile) => {
         const userTips = tips.filter((t: UserTip) => t.user_id === profile.id)
-        let points = 0, exact = 0, outcome = 0, tipped = 0
+        let points = 0, exact = 0, outcome = 0, finals = 0, tipped = 0
 
         for (const tip of userTips) {
           const match = matchMap.get(tip.match_id)
@@ -131,7 +132,8 @@ export function LeaderboardPage() {
           )
           points += p
           if (!isKnockout && p === 30) exact++
-          else if (p > 0) outcome++
+          else if (!isKnockout && p > 0) outcome++
+          else if (isKnockout && p > 0) finals++
         }
 
         const pred = predictions?.find((p: TournamentPrediction) => p.user_id === profile.id)
@@ -150,7 +152,7 @@ export function LeaderboardPage() {
           trend = curPos < prevPos ? 'up' : curPos > prevPos ? 'down' : 'same'
         }
 
-        return { userId: profile.id, displayName: profile.display_name, points, exact, outcome, tipped, top3, trend }
+        return { userId: profile.id, displayName: profile.display_name, points, exact, outcome, finals, tipped, top3, trend }
       })
 
       result.sort((a, b) => b.points - a.points || b.exact - a.exact || b.outcome - a.outcome)
@@ -176,7 +178,8 @@ export function LeaderboardPage() {
               <th className="text-left px-4 py-3 w-8">#</th>
               <th className="text-left px-4 py-3">Spelare</th>
               <th className="text-right px-4 py-3 hidden sm:table-cell" title="Exakt rätt resultat (gruppspel)">Exakt</th>
-              <th className="text-right px-4 py-3 hidden sm:table-cell" title="Rätt utfall (gruppspel) eller rätt lag vidare (slutspel)">Utfall</th>
+              <th className="text-right px-4 py-3 hidden sm:table-cell" title="Rätt utfall i gruppspelet (10–19p)">Utfall</th>
+              <th className="text-right px-4 py-3 hidden sm:table-cell" title="Rätt lag vidare i slutspelet (30p)">Finaler</th>
               <th className="text-right px-4 py-3 hidden sm:table-cell" title="Topp 3-tippning: 200p/100p/50p">Topp 3</th>
               <th className="text-right px-4 py-3 hidden sm:table-cell">Tippade</th>
               <th className="text-right px-4 py-3 text-amber-400 font-bold">Poäng</th>
@@ -211,6 +214,7 @@ export function LeaderboardPage() {
                   </td>
                   <td className="px-4 py-3 text-right text-gray-300 hidden sm:table-cell">{entry.exact}</td>
                   <td className="px-4 py-3 text-right text-gray-300 hidden sm:table-cell">{entry.outcome}</td>
+                  <td className="px-4 py-3 text-right text-gray-300 hidden sm:table-cell">{entry.finals}</td>
                   <td className="px-4 py-3 text-right hidden sm:table-cell">
                     <span className={entry.top3 > 0 ? 'text-purple-400 font-medium' : 'text-gray-600'}>
                       {entry.top3 > 0 ? `+${entry.top3}` : '–'}
@@ -225,7 +229,7 @@ export function LeaderboardPage() {
         </table>
       </div>
       <p className="text-gray-600 text-xs mt-2 text-right">
-        Exakt = 30p &nbsp;·&nbsp; Utfall = 10–19p / rätt lag vidare &nbsp;·&nbsp; Topp 3 = 200/100/50p
+        Exakt = 30p &nbsp;·&nbsp; Utfall = 10–19p &nbsp;·&nbsp; Finaler = rätt lag vidare &nbsp;·&nbsp; Topp 3 = 200/100/50p
       </p>
     </div>
   )
