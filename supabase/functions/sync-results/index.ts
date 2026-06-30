@@ -85,7 +85,7 @@ async function sync() {
   const { matches: apiMatches } = await allRes.json()
 
   // FINISHED-endpoint har tillförlitliga slutresultat (bulk-endpointen returnerar null)
-  const finishedScores = new Map<number, { home: number | null; away: number | null; winner: string | null }>()
+  const finishedScores = new Map<number, { home: number | null; away: number | null; winner: string | null; duration: string | null }>()
   if (finishedRes.ok) {
     const { matches: finishedMatches } = await finishedRes.json()
     for (const m of (finishedMatches ?? [])) {
@@ -93,6 +93,7 @@ async function sync() {
         home: m.score?.fullTime?.home ?? null,
         away: m.score?.fullTime?.away ?? null,
         winner: m.score?.winner ?? null,
+        duration: m.score?.duration ?? null,
       })
     }
   }
@@ -161,12 +162,16 @@ async function sync() {
       const isKnockout = KNOCKOUT_STAGES.has(api.stage)
 
       let winnerTeam = null
-      if (isKnockout && scored?.winner) {
+      if (isKnockout && scored) {
         const homeTeamSv = db.home_team || homeSv
         const awayTeamSv = db.away_team || awaySv
-        winnerTeam = scored.winner === 'HOME_TEAM' ? homeTeamSv
-                   : scored.winner === 'AWAY_TEAM' ? awayTeamSv
-                   : null
+        if (scored.winner === 'HOME_TEAM') {
+          winnerTeam = homeTeamSv
+        } else if (scored.winner === 'AWAY_TEAM') {
+          winnerTeam = awayTeamSv
+        } else if (scored.duration === 'PENALTY_SHOOTOUT' && scored.home != null && scored.away != null) {
+          winnerTeam = scored.home > scored.away ? homeTeamSv : awayTeamSv
+        }
       }
 
       if (homeScore !== null && db.home_score !== homeScore) updates.home_score = homeScore
